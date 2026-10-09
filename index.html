@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>역근무현황</title>
 
-  <!-- 홈 화면 아이콘 & 메타데이터 -->
   <link rel="apple-touch-icon" sizes="192x192" href="https://i.ibb.co/zWmkwfRw/image.png">
   <link rel="icon" type="image/png" sizes="192x192" href="https://i.ibb.co/zWmkwfRw/image.png">
   <link rel="shortcut icon" href="https://i.ibb.co/zWmkwfRw/image.png">
@@ -24,7 +23,6 @@
   </style>
 </head>
 <body>
-  <!-- 클립보드 및 웹 공유 권한 포함, 깔끔한 원본 URL 로드 -->
   <iframe id="appFrame" 
           src="https://script.google.com/macros/s/AKfycbx0aNwrGPIT5fb4CJnl2J6I2dZvYHdWVJ7H9NHPX3w15A0fC_h68DcclLMwzYswn2nJ/exec" 
           allow="clipboard-read; clipboard-write; clipboard-write *; web-share">
@@ -33,27 +31,44 @@
   <script>
     const appFrame = document.getElementById('appFrame');
 
-    window.addEventListener("message", function(e) {
-      if (!e.data) return;
+    // 내부 iframe에 현재 보관된 데이터 전송하는 헬퍼
+    function sendUserDataToFrame() {
+      const team = localStorage.getItem('station_user_team') || '3';
+      const name = localStorage.getItem('station_user_name') || '';
 
-      // 1. 내부 웹앱이 로드되어 "저장된 데이터 달라"고 요청할 때
-      if (e.data.type === "REQ_INIT_USER") {
-        const team = localStorage.getItem('station_team') || '';
-        const name = localStorage.getItem('station_name') || '';
-
-        // 안쪽 iframe으로 보관된 데이터 전달
+      if (appFrame && appFrame.contentWindow) {
         appFrame.contentWindow.postMessage({
           type: "SEND_INIT_USER",
           team: team,
           name: name
         }, "*");
       }
+    }
 
-      // 2. 내부 웹앱에서 팀/이름이 변경되어 저장 요청할 때
-      if (e.data.type === "SAVE_USER_PREF") {
-        if (e.data.team !== undefined) localStorage.setItem('station_team', e.data.team);
-        if (e.data.name !== undefined) localStorage.setItem('station_name', e.data.name);
+    // 통신 수신부
+    window.addEventListener("message", function(e) {
+      if (!e.data) return;
+
+      // [A] 내부 웹앱이 "나 준비 완료됐으니 데이터 줘" 하고 부를 때
+      if (e.data.type === "REQ_INIT_USER") {
+        sendUserDataToFrame();
       }
+
+      // [B] 내부 웹앱에서 팀/이름이 변경되었을 때 영구 보관
+      if (e.data.type === "SAVE_USER_PREF") {
+        if (e.data.team !== undefined && e.data.team !== null) {
+          localStorage.setItem('station_user_team', String(e.data.team));
+        }
+        if (e.data.name !== undefined && e.data.name !== null) {
+          localStorage.setItem('station_user_name', String(e.data.name));
+        }
+      }
+    });
+
+    // iframe 로딩이 끝났을 때도 혹시 몰라 1회 전송
+    appFrame.addEventListener('load', function() {
+      setTimeout(sendUserDataToFrame, 200);
+      setTimeout(sendUserDataToFrame, 800);
     });
   </script>
 </body>
