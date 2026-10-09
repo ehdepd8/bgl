@@ -42,17 +42,20 @@
     const finalUrl = queryParts.length > 0 ? (BASE_URL + "?" + queryParts.join("&")) : BASE_URL;
     appFrame.src = finalUrl;
 
-    // 3. 내부 웹앱에서 팀/이름 변경 시 GitHub 로컬스토리지에 저장
+    // 내부 웹앱에서 팀/이름 변경 시 GitHub 로컬스토리지에 저장
     window.addEventListener("message", function(e) {
       if (!e.data || e.data.type !== "SAVE_USER_PREF") return;
 
-      if (e.data.team !== undefined && e.data.team !== null && e.data.team !== '') {
-        localStorage.setItem('station_user_team', String(e.data.team));
+      var t = e.data.team;
+      var n = e.data.name;
+
+      if (t !== undefined && t !== null && t !== '') {
+        localStorage.setItem('station_user_team', String(t));
       }
-      if (e.data.name !== undefined && e.data.name !== null && e.data.name !== '') {
-        localStorage.setItem('station_user_name', String(e.data.name));
+      if (n !== undefined && n !== null && n !== '') {
+        localStorage.setItem('station_user_name', String(n));
       }
-    });
+    }, false);
   </script>
 </body>
 </html>
