@@ -5,13 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>역근무현황</title>
 
-  <!-- BGL 역무처 홈 화면 아이콘 및 파비콘 -->
+  <!-- iOS / 홈 화면 아이콘 & 메타데이터 -->
   <link rel="apple-touch-icon" sizes="192x192" href="https://i.ibb.co/zWmkwfRw/image.png">
   <link rel="icon" type="image/png" sizes="192x192" href="https://i.ibb.co/zWmkwfRw/image.png">
   <link rel="shortcut icon" href="https://i.ibb.co/zWmkwfRw/image.png">
   <meta property="og:title" content="역근무현황">
   <meta property="og:description" content="부산-김해경전철 역무 지원 포털">
   <meta property="og:image" content="https://i.ibb.co/zWmkwfRw/image.png">
+  <meta name="apple-mobile-web-app-title" content="역근무현황">
+  <meta name="apple-mobile-web-app-capable" content="yes">
 
   <style>
     html, body {
@@ -31,6 +33,29 @@
   </style>
 </head>
 <body>
-  <iframe src="https://script.google.com/macros/s/AKfycbx0aNwrGPIT5fb4CJnl2J6I2dZvYHdWVJ7H9NHPX3w15A0fC_h68DcclLMwzYswn2nJ/exec"></iframe>
+  <iframe id="appFrame"></iframe>
+
+  <script>
+    const BASE_URL = "https://script.google.com/macros/s/AKfycbx0aNwrGPIT5fb4CJnl2J6I2dZvYHdWVJ7H9NHPX3w15A0fC_h68DcclLMwzYswn2nJ/exec";
+    
+    // 1. 기존 저장된 팀/이름 불러오기
+    const savedTeam = localStorage.getItem('station_team') || '';
+    const savedName = localStorage.getItem('station_name') || '';
+
+    let targetUrl = BASE_URL;
+    if (savedTeam || savedName) {
+      targetUrl += "?team=" + encodeURIComponent(savedTeam) + "&name=" + encodeURIComponent(savedName);
+    }
+    
+    document.getElementById('appFrame').src = targetUrl;
+
+    // 2. 내부 앱에서 팀/이름이 변경되면 GitHub 로컬스토리지에 즉시 보관
+    window.addEventListener("message", function(e) {
+      if (e.data && e.data.type === "SAVE_USER_PREF") {
+        localStorage.setItem('station_team', e.data.team || '');
+        localStorage.setItem('station_name', e.data.name || '');
+      }
+    });
+  </script>
 </body>
 </html>
