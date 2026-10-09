@@ -29,7 +29,7 @@
     const BASE_URL = "https://script.google.com/macros/s/AKfycbx0aNwrGPIT5fb4CJnl2J6I2dZvYHdWVJ7H9NHPX3w15A0fC_h68DcclLMwzYswn2nJ/exec";
     const appFrame = document.getElementById('appFrame');
 
-    // 1. 현재 주소창 파라미터 확인 및 iframe URL 설정
+    // 1. 현재 브라우저 주소창 파라미터 또는 GitHub 저장소 값 확인
     const urlParams = new URLSearchParams(window.location.search);
     let team = urlParams.get('initTeam') || localStorage.getItem('station_user_team') || '';
     let name = urlParams.get('initName') || localStorage.getItem('station_user_name') || '';
@@ -41,37 +41,36 @@
     const finalUrl = queryParts.length > 0 ? (BASE_URL + "?" + queryParts.join("&")) : BASE_URL;
     appFrame.src = finalUrl;
 
-    // 2. 내부 웹앱(iframe)과의 메시지 통신 처리
+    // 2. 내부 웹앱(iframe)과 양방향 통신 처리
     window.addEventListener("message", function(e) {
       if (!e.data) return;
 
-      // [기존] 팀 / 이름 저장
+      // [A] 팀 / 이름 저장
       if (e.data.type === "SAVE_USER_PREF") {
         if (e.data.team) localStorage.setItem('station_user_team', String(e.data.team));
         if (e.data.name) localStorage.setItem('station_user_name', String(e.data.name));
       }
 
-      // ★ [추가] 시각표 데이터(역 선택, 시간/분) 저장
+      // [B] 시각표 데이터(역 선택, 선택한 분 기록) 저장
       if (e.data.type === "SAVE_TIMETABLE_PREF") {
-        if (e.data.station !== undefined) localStorage.setItem('timetable_station', String(e.data.station));
-        if (e.data.timeRecords !== undefined) localStorage.setItem('timetable_records', JSON.stringify(e.data.timeRecords));
+        if (e.data.station) localStorage.setItem('lastTimetableStation', String(e.data.station));
+        if (e.data.records !== undefined) localStorage.setItem('timetable_picked_records_v1', JSON.stringify(e.data.records));
       }
 
-      // ★ [추가] 시각표 화면 진입 시 저장된 데이터 회신
+      // [C] 시각표 화면에서 데이터 요청 시 전달 (아이폰 Safari ITP 우회 복원)
       if (e.data.type === "REQ_TIMETABLE_PREF") {
-        const savedStation = localStorage.getItem('timetable_station') || '';
+        const savedStation = localStorage.getItem('lastTimetableStation') || '';
         let savedRecords = null;
         try {
-          const raw = localStorage.getItem('timetable_records');
+          const raw = localStorage.getItem('timetable_picked_records_v1');
           if (raw) savedRecords = JSON.parse(raw);
         } catch(err) {}
 
-        // 요청을 보낸 iframe으로 응답 전송
         if (e.source) {
           e.source.postMessage({
             type: "SEND_TIMETABLE_PREF",
             station: savedStation,
-            timeRecords: savedRecords
+            records: savedRecords
           }, "*");
         }
       }
