@@ -29,18 +29,20 @@
     const BASE_URL = "https://script.google.com/macros/s/AKfycbx0aNwrGPIT5fb4CJnl2J6I2dZvYHdWVJ7H9NHPX3w15A0fC_h68DcclLMwzYswn2nJ/exec";
     const appFrame = document.getElementById('appFrame');
 
-    // 1. GitHub 최상위 저장소에서 저장된 값 읽기
-    const savedTeam = localStorage.getItem('station_user_team') || '';
-    const savedName = localStorage.getItem('station_user_name') || '';
+    // 1. 현재 브라우저 주소창의 파라미터 확인
+    const urlParams = new URLSearchParams(window.location.search);
+    let team = urlParams.get('initTeam') || localStorage.getItem('station_user_team') || '';
+    let name = urlParams.get('initName') || localStorage.getItem('station_user_name') || '';
 
-    // 2. URL 파라미터로 실어서 iframe 호출 (Safari 스토리지 격리 완전 우회)
-    let params = [];
-    if (savedTeam) params.push("initTeam=" + encodeURIComponent(savedTeam));
-    if (savedName) params.push("initName=" + encodeURIComponent(savedName));
+    // 2. URL 파라미터를 구성하여 iframe src에 주입
+    let queryParts = [];
+    if (team) queryParts.push("initTeam=" + encodeURIComponent(team));
+    if (name) queryParts.push("initName=" + encodeURIComponent(name));
 
-    appFrame.src = params.length > 0 ? (BASE_URL + "?" + params.join("&")) : BASE_URL;
+    const finalUrl = queryParts.length > 0 ? (BASE_URL + "?" + queryParts.join("&")) : BASE_URL;
+    appFrame.src = finalUrl;
 
-    // 3. 내부 웹앱에서 팀/이름이 변경되면 GitHub 로컬스토리지에 즉시 영구 보관
+    // 3. 내부 웹앱에서 팀/이름 변경 시 GitHub 로컬스토리지에 저장
     window.addEventListener("message", function(e) {
       if (!e.data || e.data.type !== "SAVE_USER_PREF") return;
 
