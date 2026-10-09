@@ -31,32 +31,21 @@
     const BASE_URL = "https://script.google.com/macros/s/AKfycbx0aNwrGPIT5fb4CJnl2J6I2dZvYHdWVJ7H9NHPX3w15A0fC_h68DcclLMwzYswn2nJ/exec";
     const appFrame = document.getElementById('appFrame');
 
-    // 1. 기본 팀/이름/역 정보는 URL 파라미터로 붙여서 iframe 로드
+    // 1. GitHub 최상위 저장소에서 저장된 값 읽기
     const savedTeam = localStorage.getItem('selected_team') || '';
     const savedName = localStorage.getItem('selected_name') || '';
-    const savedStation = localStorage.getItem('selected_station') || '';
 
     let params = [];
     if (savedTeam) params.push("team=" + encodeURIComponent(savedTeam));
     if (savedName) params.push("name=" + encodeURIComponent(savedName));
-    if (savedStation) params.push("station=" + encodeURIComponent(savedStation));
 
+    // 파라미터를 달아서 iframe 호출
     appFrame.src = params.length > 0 ? (BASE_URL + "?" + params.join("&")) : BASE_URL;
 
-    // 2. 메시지 수신 및 동기화 처리
+    // 2. 내부 앱에서 postMessage가 오면 즉시 로컬스토리지에 저장
     window.addEventListener("message", function(e) {
       if (!e.data) return;
 
-      // [A] 앱이 준비되었을 때 저장된 시각표 데이터 전달
-      if (e.data.type === "REQ_SAVED_DATA") {
-        const storedTimetable = localStorage.getItem('station_timetable_data') || '';
-        appFrame.contentWindow.postMessage({
-          type: "LOAD_SAVED_TIMETABLE",
-          timetable: storedTimetable
-        }, "*");
-      }
-
-      // [B] 팀/이름 또는 시각표 등록 시 저장
       if (e.data.type === "SAVE_USER_PREF") {
         if (e.data.key && e.data.value !== undefined) {
           localStorage.setItem(e.data.key, e.data.value);
