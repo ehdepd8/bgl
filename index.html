@@ -23,52 +23,33 @@
   </style>
 </head>
 <body>
-  <iframe id="appFrame" 
-          src="https://script.google.com/macros/s/AKfycbx0aNwrGPIT5fb4CJnl2J6I2dZvYHdWVJ7H9NHPX3w15A0fC_h68DcclLMwzYswn2nJ/exec" 
-          allow="clipboard-read; clipboard-write; clipboard-write *; web-share">
-  </iframe>
+  <iframe id="appFrame" allow="clipboard-read; clipboard-write; clipboard-write *; web-share"></iframe>
 
   <script>
+    const BASE_URL = "https://script.google.com/macros/s/AKfycbx0aNwrGPIT5fb4CJnl2J6I2dZvYHdWVJ7H9NHPX3w15A0fC_h68DcclLMwzYswn2nJ/exec";
     const appFrame = document.getElementById('appFrame');
 
-    // 내부 iframe에 현재 보관된 데이터 전송하는 헬퍼
-    function sendUserDataToFrame() {
-      const team = localStorage.getItem('station_user_team') || '3';
-      const name = localStorage.getItem('station_user_name') || '';
+    // 1. GitHub 최상위 저장소에서 저장된 값 읽기
+    const savedTeam = localStorage.getItem('station_user_team') || '';
+    const savedName = localStorage.getItem('station_user_name') || '';
 
-      if (appFrame && appFrame.contentWindow) {
-        appFrame.contentWindow.postMessage({
-          type: "SEND_INIT_USER",
-          team: team,
-          name: name
-        }, "*");
-      }
-    }
+    // 2. URL 파라미터로 실어서 iframe 호출 (Safari 스토리지 격리 완전 우회)
+    let params = [];
+    if (savedTeam) params.push("initTeam=" + encodeURIComponent(savedTeam));
+    if (savedName) params.push("initName=" + encodeURIComponent(savedName));
 
-    // 통신 수신부
+    appFrame.src = params.length > 0 ? (BASE_URL + "?" + params.join("&")) : BASE_URL;
+
+    // 3. 내부 웹앱에서 팀/이름이 변경되면 GitHub 로컬스토리지에 즉시 영구 보관
     window.addEventListener("message", function(e) {
-      if (!e.data) return;
+      if (!e.data || e.data.type !== "SAVE_USER_PREF") return;
 
-      // [A] 내부 웹앱이 "나 준비 완료됐으니 데이터 줘" 하고 부를 때
-      if (e.data.type === "REQ_INIT_USER") {
-        sendUserDataToFrame();
+      if (e.data.team !== undefined && e.data.team !== null && e.data.team !== '') {
+        localStorage.setItem('station_user_team', String(e.data.team));
       }
-
-      // [B] 내부 웹앱에서 팀/이름이 변경되었을 때 영구 보관
-      if (e.data.type === "SAVE_USER_PREF") {
-        if (e.data.team !== undefined && e.data.team !== null) {
-          localStorage.setItem('station_user_team', String(e.data.team));
-        }
-        if (e.data.name !== undefined && e.data.name !== null) {
-          localStorage.setItem('station_user_name', String(e.data.name));
-        }
+      if (e.data.name !== undefined && e.data.name !== null && e.data.name !== '') {
+        localStorage.setItem('station_user_name', String(e.data.name));
       }
-    });
-
-    // iframe 로딩이 끝났을 때도 혹시 몰라 1회 전송
-    appFrame.addEventListener('load', function() {
-      setTimeout(sendUserDataToFrame, 200);
-      setTimeout(sendUserDataToFrame, 800);
     });
   </script>
 </body>
