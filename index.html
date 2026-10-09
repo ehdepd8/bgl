@@ -14,21 +14,15 @@
   <meta property="og:image" content="https://i.ibb.co/zWmkwfRw/image.png">
   <meta name="apple-mobile-web-app-title" content="역근무현황">
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
 
   <style>
     html, body {
-      margin: 0;
-      padding: 0;
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      background-color: #ffffff;
+      margin: 0; padding: 0; width: 100%; height: 100%;
+      overflow: hidden; background-color: #ffffff;
     }
     iframe {
-      width: 100%;
-      height: 100%;
-      border: none;
-      display: block;
+      width: 100%; height: 100%; border: none; display: block;
     }
   </style>
 </head>
@@ -37,23 +31,38 @@
 
   <script>
     const BASE_URL = "https://script.google.com/macros/s/AKfycbx0aNwrGPIT5fb4CJnl2J6I2dZvYHdWVJ7H9NHPX3w15A0fC_h68DcclLMwzYswn2nJ/exec";
-    
-    // 1. 기존 저장된 팀/이름 불러오기
-    const savedTeam = localStorage.getItem('station_team') || '';
-    const savedName = localStorage.getItem('station_name') || '';
+    const appFrame = document.getElementById('appFrame');
 
-    let targetUrl = BASE_URL;
-    if (savedTeam || savedName) {
-      targetUrl += "?team=" + encodeURIComponent(savedTeam) + "&name=" + encodeURIComponent(savedName);
-    }
-    
-    document.getElementById('appFrame').src = targetUrl;
+    // 1. 기본 팀/이름/역 정보는 URL 파라미터로 붙여서 iframe 로드
+    const savedTeam = localStorage.getItem('selected_team') || '';
+    const savedName = localStorage.getItem('selected_name') || '';
+    const savedStation = localStorage.getItem('selected_station') || '';
 
-    // 2. 내부 앱에서 팀/이름이 변경되면 GitHub 로컬스토리지에 즉시 보관
+    let params = [];
+    if (savedTeam) params.push("team=" + encodeURIComponent(savedTeam));
+    if (savedName) params.push("name=" + encodeURIComponent(savedName));
+    if (savedStation) params.push("station=" + encodeURIComponent(savedStation));
+
+    appFrame.src = params.length > 0 ? (BASE_URL + "?" + params.join("&")) : BASE_URL;
+
+    // 2. 메시지 수신 및 동기화 처리
     window.addEventListener("message", function(e) {
-      if (e.data && e.data.type === "SAVE_USER_PREF") {
-        localStorage.setItem('station_team', e.data.team || '');
-        localStorage.setItem('station_name', e.data.name || '');
+      if (!e.data) return;
+
+      // [A] 앱이 준비되었을 때 저장된 시각표 데이터 전달
+      if (e.data.type === "REQ_SAVED_DATA") {
+        const storedTimetable = localStorage.getItem('station_timetable_data') || '';
+        appFrame.contentWindow.postMessage({
+          type: "LOAD_SAVED_TIMETABLE",
+          timetable: storedTimetable
+        }, "*");
+      }
+
+      // [B] 팀/이름 또는 시각표 등록 시 저장
+      if (e.data.type === "SAVE_USER_PREF") {
+        if (e.data.key && e.data.value !== undefined) {
+          localStorage.setItem(e.data.key, e.data.value);
+        }
       }
     });
   </script>
