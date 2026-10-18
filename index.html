@@ -16,29 +16,33 @@
   </style>
 </head>
 <body>
-  <iframe id="appFrame" src="about:blank" allow="clipboard-read; clipboard-write; clipboard-write *; web-share"></iframe>
+  <iframe id="appFrame" allow="clipboard-read; clipboard-write; clipboard-write *; web-share"></iframe>
 
   <script>
-    // 기본 Apps Script 배포 URL
     const BASE_APP_URL = "https://script.google.com/macros/s/AKfycbx0aNwrGPIT5fb4CJnl2J6I2dZvYHdWVJ7H9NHPX3w15A0fC_h68DcclLMwzYswn2nJ/exec";
     const appFrame = document.getElementById('appFrame');
 
-    // 1. 부모 창(1st-party) 로컬스토리지에서 기존 설정 읽기
-    let savedTeam = '';
-    let savedName = '';
-    try {
-      savedTeam = localStorage.getItem('station_user_team') || '';
-      savedName = localStorage.getItem('station_user_name') || '';
-    } catch(e) {}
+    // 1. 현재 접속된 GitHub URL 쿼리 파라미터 우선 확인 (?initTeam=...&initName=...)
+    const urlParams = new URLSearchParams(window.location.search);
+    let currentTeam = urlParams.get('initTeam') || '';
+    let currentName = urlParams.get('initName') || '';
 
-    // 2. URL 파라미터를 iframe src에 직접 결합하여 최초 로드 (사파리 ITP 우회 핵심)
-    let targetUrl = BASE_APP_URL;
-    if (savedName) {
-      targetUrl += "?initTeam=" + encodeURIComponent(savedTeam || '3') + "&initName=" + encodeURIComponent(savedName);
+    // 2. 주소창에 파라미터가 없다면 GitHub 자체 1st-party localStorage에서 복원
+    if (!currentName) {
+      try {
+        currentName = localStorage.getItem('station_user_name') || '';
+        currentTeam = localStorage.getItem('station_user_team') || '';
+      } catch(e) {}
     }
-    appFrame.src = targetUrl;
 
-    // 3. 자식(iframe)에서 사용자가 팀이나 이름을 바꾸면 부모 로컬스토리지에 영구 보관
+    // 3. ★ 핵심: 저장된 정보가 있으면 iframe src에 쿼리를 붙여서 띄움 (빈칸 로딩 원천 차단)
+    let finalSrc = BASE_APP_URL;
+    if (currentName) {
+      finalSrc += "?initTeam=" + encodeURIComponent(currentTeam || '3') + "&initName=" + encodeURIComponent(currentName);
+    }
+    appFrame.src = finalSrc;
+
+    // 4. 자식 화면에서 팀이나 이름을 바꿀 때마다 GitHub 1st-party 스토리지에 영구 보관
     window.addEventListener("message", function(e) {
       if (!e || !e.data) return;
 
