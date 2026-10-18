@@ -22,41 +22,35 @@
     const BASE_APP_URL = "https://script.google.com/macros/s/AKfycbx0aNwrGPIT5fb4CJnl2J6I2dZvYHdWVJ7H9NHPX3w15A0fC_h68DcclLMwzYswn2nJ/exec";
     const appFrame = document.getElementById('appFrame');
 
-    // 기기 감지: iOS(아이폰/아이패드) 여부 판별
-    const ua = navigator.userAgent || navigator.vendor || window.opera;
-    const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    // 1. 가장 최근에 사용자가 기록한 팀과 이름 조회
+    let recentTeam = '';
+    let recentName = '';
+    try {
+      recentTeam = localStorage.getItem('recent_station_team') || localStorage.getItem('station_user_team') || '';
+      recentName = localStorage.getItem('recent_station_name') || localStorage.getItem('station_user_name') || '';
+    } catch(e) {}
 
-    if (isIOS) {
-      // [아이폰] iframe 스토리지 휘발 방지를 위해 부모 창 저장소 값을 URL 파라미터로 보정
-      let savedTeam = '';
-      let savedName = '';
-      try {
-        savedTeam = localStorage.getItem('station_user_team') || '';
-        savedName = localStorage.getItem('station_user_name') || '';
-      } catch(e) {}
-
-      let targetUrl = BASE_APP_URL;
-      if (savedName) {
-        targetUrl += "?initTeam=" + encodeURIComponent(savedTeam || '3') + "&initName=" + encodeURIComponent(savedName);
-      }
-      appFrame.src = targetUrl;
-    } else {
-      // [갤럭시/안드로이드] 자체 스토리지가 완벽하게 작동하므로 부모의 과거 파라미터 간섭 배제
-      appFrame.src = BASE_APP_URL;
+    // 2. 최근 값이 있으면 iframe 속 주소 뒤에만 붙여서 실행 (주소창은 기본 주소 유지)
+    let finalSrc = BASE_APP_URL;
+    if (recentName) {
+      finalSrc += "?initTeam=" + encodeURIComponent(recentTeam || '3') + "&initName=" + encodeURIComponent(recentName);
     }
+    appFrame.src = finalSrc;
 
-    // 자식(DutyView)에서 팀/이름 변경 시 부모 스토리지 동기화
+    // 3. 자식 화면에서 최근 팀/이름이 변경되면 부모 스토리지 최신값으로 즉시 갱신
     window.addEventListener("message", function(e) {
       if (!e || !e.data) return;
 
-      if (e.data.type === "SAVE_USER_PREF") {
-        const newTeam = e.data.team || '3';
-        const newName = (e.data.name || '').trim();
+      if (e.data.type === "SET_RECENT_DUTY_USER" || e.data.type === "SAVE_USER_PREF") {
+        const t = e.data.team || '3';
+        const n = (e.data.name || '').trim();
 
-        if (newName) {
+        if (n) {
           try {
-            localStorage.setItem('station_user_team', newTeam);
-            localStorage.setItem('station_user_name', newName);
+            localStorage.setItem('recent_station_team', t);
+            localStorage.setItem('recent_station_name', n);
+            localStorage.setItem('station_user_team', t);
+            localStorage.setItem('station_user_name', n);
           } catch(err) {}
         }
       }
