@@ -29,49 +29,87 @@
     const BASE_URL = "https://script.google.com/macros/s/AKfycbx0aNwrGPIT5fb4CJnl2J6I2dZvYHdWVJ7H9NHPX3w15A0fC_h68DcclLMwzYswn2nJ/exec";
     const appFrame = document.getElementById('appFrame');
 
-    // 1. 저장된 값들을 읽어 URL 파라미터로 주입 (초기 진입 시 Safari 차단 우회)
+    // 1. URL 쿼리 파라미터 또는 localStorage에서 복원
     const urlParams = new URLSearchParams(window.location.search);
-    let team = urlParams.get('initTeam') || localStorage.getItem('station_user_team') || '';
-    let name = urlParams.get('initName') || localStorage.getItem('station_user_name') || '';
-    let station = urlParams.get('initStation') || localStorage.getItem('lastTimetableStation') || '';
-    let ttRecords = urlParams.get('initTtRecords') || localStorage.getItem('timetable_picked_records_v1') || '';
+    let currentTeam = urlParams.get('initTeam') || localStorage.getItem('station_user_team') || '';
+    let currentName = urlParams.get('initName') || localStorage.getItem('station_user_name') || '';
+    let currentStation = urlParams.get('initStation') || localStorage.getItem('lastTimetableStation') || '';
+    let currentTtRecords = urlParams.get('initTtRecords') || localStorage.getItem('timetable_picked_records_v1') || '';
 
-    let queryParts = [];
-    if (team) queryParts.push("initTeam=" + encodeURIComponent(team));
-    if (name) queryParts.push("initName=" + encodeURIComponent(name));
-    if (station) queryParts.push("initStation=" + encodeURIComponent(station));
-    if (ttRecords) queryParts.push("initTtRecords=" + encodeURIComponent(ttRecords));
+    function buildIframeUrl() {
+      let queryParts = [];
+      if (currentTeam) queryParts.push("initTeam=" + encodeURIComponent(currentTeam));
+      if (currentName) queryParts.push("initName=" + encodeURIComponent(currentName));
+      if (currentStation) queryParts.push("initStation=" + encodeURIComponent(currentStation));
+      if (currentTtRecords) queryParts.push("initTtRecords=" + encodeURIComponent(currentTtRecords));
+      return queryParts.length > 0 ? (BASE_URL + "?" + queryParts.join("&")) : BASE_URL;
+    }
 
-    const finalUrl = queryParts.length > 0 ? (BASE_URL + "?" + queryParts.join("&")) : BASE_URL;
-    appFrame.src = finalUrl;
+    // iframe URL 주입
+    appFrame.src = buildIframeUrl();
 
-    // 2. 내부 웹앱과 실시간 양방향 메시지 통신 (아이폰 사파리 완벽 보장)
+    // 2. iframe 내부로 저장된 정보 전송 헬퍼 함수
+    function sendUserPrefToIframe() {
+      const savedTeam = currentTeam || localStorage.getItem('station_user_team') || '';
+      const savedName = currentName || localStorage.getItem('station_user_name') || '';
+      if (appFrame && appFrame.contentWindow && (savedTeam || savedName)) {
+        appFrame.contentWindow.postMessage({
+          type: "RESTORE_PREF",
+          team: savedTeam,
+          name: savedName
+        }, "*");
+      }
+    }
+
+    // iframe 로드 완료 시 1회 자동 동기화
+    appFrame.addEventListener('load', function() {
+      sendUserPrefToIframe();
+      setTimeout(sendUserPrefToIframe, 500);
+    });
+
+    // 3. 메시지 이벤트 수신
     window.addEventListener("message", function(e) {
       if (!e.data) return;
 
-      // [저장] 내부 웹앱에서 팀/이름 변경 시 GitHub에 영구 저장
+      // [팀 / 이름 저장]
       if (e.data.type === "SAVE_USER_PREF") {
-        if (e.data.team) localStorage.setItem('station_user_team', String(e.data.team));
-        if (e.data.name) localStorage.setItem('station_user_name', String(e.data.name));
-      }
-
-      // [저장] 시각표 역 / 기록 저장
-      if (e.data.type === "SAVE_TIMETABLE_PREF") {
-        if (e.data.station) localStorage.setItem('lastTimetableStation', String(e.data.station));
-        if (e.data.records !== undefined) localStorage.setItem('timetable_picked_records_v1', JSON.stringify(e.data.records));
-      }
-
-      // [복원] 내부 웹앱이 로드되면서 사용자 정보를 요청할 때 즉시 회신
-      if (e.data.type === "REQUEST_USER_PREF") {
-        const savedTeam = localStorage.getItem('station_user_team') || '';
-        const savedName = localStorage.getItem('station_user_name') || '';
-        if (appFrame && appFrame.contentWindow && (savedTeam || savedName)) {
-          appFrame.contentWindow.postMessage({
-            type: "RESTORE_PREF",
-            team: savedTeam,
-            name: savedName
-          }, "*");
+        let isChanged = false;
+        if (e.data.team) {
+          currentTeam = String(e.data.team);
+          localStorage.setItem('station_user_team', currentTeam);
+          isChanged = true;
         }
+        if (e.data.name) {
+          currentName = String(e.data.name);
+          localStorage.setItem('station_user_name', currentName);
+          isChanged = true;
+        }
+
+        // 브라우저 주소창에도 파라미터 즉시 반영 (사파리 ITP 차단 완전 우회)
+        if (isChanged) {
+          try {
+            const nextUrl = new URL(window.location.href);
+            if (currentTeam) nextUrl.searchParams.set('initTeam', currentTeam);
+            if (currentName) nextUrl.searchParams.set('initName', currentName);
+            window.history.replaceState({}, '', nextUrl.toString());
+          } catch(err) {}
+        }
+      }
+
+      // [시각표 역 / 기록 저장]
+      if (e.data.type === "SAVE_TIMETABLE_PREF") {
+        if (e.data.station) {
+          currentStation = String(e.data.station);
+          localStorage.setItem('lastTimetableStation', currentStation);
+        }
+        if (e.data.records !== undefined) {
+          localStorage.setItem('timetable_picked_records_v1', JSON.stringify(e.data.records));
+        }
+      }
+
+      // [내부 웹앱의 복원 요청 수신 시 즉시 회신]
+      if (e.data.type === "REQUEST_USER_PREF") {
+        sendUserPrefToIframe();
       }
     }, false);
   </script>
