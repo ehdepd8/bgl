@@ -29,23 +29,28 @@
     const BASE_URL = "https://script.google.com/macros/s/AKfycbx0aNwrGPIT5fb4CJnl2J6I2dZvYHdWVJ7H9NHPX3w15A0fC_h68DcclLMwzYswn2nJ/exec";
     const appFrame = document.getElementById('appFrame');
 
-    // 1. 값 읽기 (URL 파라미터 -> 로컬스토리지 순)
     const urlParams = new URLSearchParams(window.location.search);
-    let currentTeam = urlParams.get('initTeam') || localStorage.getItem('station_user_team') || '3';
-    let currentName = urlParams.get('initName') || localStorage.getItem('station_user_name') || '';
-    let currentStation = urlParams.get('initStation') || localStorage.getItem('lastTimetableStation') || '';
-    let currentTtRecords = urlParams.get('initTtRecords') || localStorage.getItem('timetable_picked_records_v1') || '';
 
-    // 2. Apps Script에 넘겨줄 URL 조립
-    let queryParts = [];
-    if (currentTeam) queryParts.push("initTeam=" + encodeURIComponent(currentTeam));
-    if (currentName) queryParts.push("initName=" + encodeURIComponent(currentName));
-    if (currentStation) queryParts.push("initStation=" + encodeURIComponent(currentStation));
-    if (currentTtRecords) queryParts.push("initTtRecords=" + encodeURIComponent(currentTtRecords));
+    // ★ [핵심] 최신 저장값(localStorage)을 무조건 1순위로 채택!
+    // URL 파라미터는 기기에 저장된 기록이 아예 없는 최초 접속 시에만 보조로 사용
+    let currentTeam = localStorage.getItem('station_user_team') || urlParams.get('initTeam') || '3';
+    let currentName = localStorage.getItem('station_user_name') || urlParams.get('initName') || '';
+    let currentStation = localStorage.getItem('lastTimetableStation') || urlParams.get('initStation') || '';
+    let currentTtRecords = localStorage.getItem('timetable_picked_records_v1') || urlParams.get('initTtRecords') || '';
 
-    appFrame.src = queryParts.length > 0 ? (BASE_URL + "?" + queryParts.join("&")) : BASE_URL;
+    // Apps Script 호출 주소 생성
+    function buildIframeUrl() {
+      let queryParts = [];
+      if (currentTeam) queryParts.push("initTeam=" + encodeURIComponent(currentTeam));
+      if (currentName) queryParts.push("initName=" + encodeURIComponent(currentName));
+      if (currentStation) queryParts.push("initStation=" + encodeURIComponent(currentStation));
+      if (currentTtRecords) queryParts.push("initTtRecords=" + encodeURIComponent(currentTtRecords));
+      return queryParts.length > 0 ? (BASE_URL + "?" + queryParts.join("&")) : BASE_URL;
+    }
 
-    // 3. 내부 웹앱으로 복원 메시지 전송
+    appFrame.src = buildIframeUrl();
+
+    // iframe으로 최신 정보 밀어넣기
     function pushToIframe() {
       if (appFrame && appFrame.contentWindow && (currentTeam || currentName)) {
         appFrame.contentWindow.postMessage({
@@ -59,10 +64,9 @@
     appFrame.addEventListener('load', function() {
       pushToIframe();
       setTimeout(pushToIframe, 300);
-      setTimeout(pushToIframe, 1000);
     });
 
-    // 4. 내부 웹앱 변경사항 실시간 수신
+    // 변경 메시지 수신 시 처리
     window.addEventListener("message", function(e) {
       if (!e.data) return;
 
@@ -79,7 +83,7 @@
           changed = true;
         }
 
-        // 브라우저 주소창(URL) 실시간 갱신 (사파리 세션 종료 대비)
+        // 주소창 URL도 최신 값으로 업데이트
         if (changed) {
           try {
             const nextUrl = new URL(window.location.href);
