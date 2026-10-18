@@ -29,16 +29,40 @@
     const BASE_URL = "https://script.google.com/macros/s/AKfycbx0aNwrGPIT5fb4CJnl2J6I2dZvYHdWVJ7H9NHPX3w15A0fC_h68DcclLMwzYswn2nJ/exec";
     const appFrame = document.getElementById('appFrame');
 
+    // 1. [핵심] 로컬스토리지 우선 탐색
+    let currentTeam = localStorage.getItem('station_user_team') || '';
+    let currentName = localStorage.getItem('station_user_name') || '';
+    let currentStation = localStorage.getItem('lastTimetableStation') || '';
+    let currentTtRecords = localStorage.getItem('timetable_picked_records_v1') || '';
+
+    // 2. [오염 방지] 주소창 쿼리는 로컬스토리지에 값이 아예 없을 때만 보조로 사용
     const urlParams = new URLSearchParams(window.location.search);
+    if (!currentTeam && urlParams.get('initTeam')) {
+      currentTeam = urlParams.get('initTeam');
+      localStorage.setItem('station_user_team', currentTeam);
+    }
+    if (!currentName && urlParams.get('initName')) {
+      currentName = urlParams.get('initName');
+      localStorage.setItem('station_user_name', currentName);
+    }
+    if (!currentStation && urlParams.get('initStation')) {
+      currentStation = urlParams.get('initStation');
+    }
+    if (!currentTtRecords && urlParams.get('initTtRecords')) {
+      currentTtRecords = urlParams.get('initTtRecords');
+    }
 
-    // ★ [핵심] 최신 저장값(localStorage)을 무조건 1순위로 채택!
-    // URL 파라미터는 기기에 저장된 기록이 아예 없는 최초 접속 시에만 보조로 사용
-    let currentTeam = localStorage.getItem('station_user_team') || urlParams.get('initTeam') || '3';
-    let currentName = localStorage.getItem('station_user_name') || urlParams.get('initName') || '';
-    let currentStation = localStorage.getItem('lastTimetableStation') || urlParams.get('initStation') || '';
-    let currentTtRecords = localStorage.getItem('timetable_picked_records_v1') || urlParams.get('initTtRecords') || '';
+    if (!currentTeam) currentTeam = '3';
 
-    // Apps Script 호출 주소 생성
+    // 3. [사파리 롤백 방지] 과거 쿼리 스트링이 사파리 세션에 박히지 않도록 순수 URL로 즉시 정리
+    if (window.location.search) {
+      try {
+        const cleanUrl = window.location.origin + window.location.pathname;
+        window.history.replaceState({}, '', cleanUrl);
+      } catch (e) {}
+    }
+
+    // 4. Apps Script iframe URL 생성
     function buildIframeUrl() {
       let queryParts = [];
       if (currentTeam) queryParts.push("initTeam=" + encodeURIComponent(currentTeam));
@@ -50,9 +74,9 @@
 
     appFrame.src = buildIframeUrl();
 
-    // iframe으로 최신 정보 밀어넣기
+    // 5. iframe으로 최신 확정값 푸시
     function pushToIframe() {
-      if (appFrame && appFrame.contentWindow && (currentTeam || currentName)) {
+      if (appFrame && appFrame.contentWindow) {
         appFrame.contentWindow.postMessage({
           type: "RESTORE_PREF",
           team: currentTeam,
@@ -64,33 +88,21 @@
     appFrame.addEventListener('load', function() {
       pushToIframe();
       setTimeout(pushToIframe, 300);
+      setTimeout(pushToIframe, 800);
     });
 
-    // 변경 메시지 수신 시 처리
+    // 6. 변경 메시지 수신 시 처리
     window.addEventListener("message", function(e) {
       if (!e.data) return;
 
       if (e.data.type === "SAVE_USER_PREF") {
-        let changed = false;
         if (e.data.team) {
           currentTeam = String(e.data.team);
           localStorage.setItem('station_user_team', currentTeam);
-          changed = true;
         }
-        if (e.data.name) {
-          currentName = String(e.data.name);
+        if (e.data.name !== undefined) {
+          currentName = String(e.data.name).trim();
           localStorage.setItem('station_user_name', currentName);
-          changed = true;
-        }
-
-        // 주소창 URL도 최신 값으로 업데이트
-        if (changed) {
-          try {
-            const nextUrl = new URL(window.location.href);
-            if (currentTeam) nextUrl.searchParams.set('initTeam', currentTeam);
-            if (currentName) nextUrl.searchParams.set('initName', currentName);
-            window.history.replaceState({}, '', nextUrl.toString());
-          } catch(err) {}
         }
       }
 
