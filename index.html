@@ -16,78 +16,42 @@
   </style>
 </head>
 <body>
-  <iframe id="appFrame" src="https://script.google.com/macros/s/AKfycbx0aNwrGPIT5fb4CJnl2J6I2dZvYHdWVJ7H9NHPX3w15A0fC_h68DcclLMwzYswn2nJ/exec" allow="clipboard-read; clipboard-write; clipboard-write *; web-share"></iframe>
+  <iframe id="appFrame" src="about:blank" allow="clipboard-read; clipboard-write; clipboard-write *; web-share"></iframe>
 
   <script>
+    // 기본 Apps Script 배포 URL
+    const BASE_APP_URL = "https://script.google.com/macros/s/AKfycbx0aNwrGPIT5fb4CJnl2J6I2dZvYHdWVJ7H9NHPX3w15A0fC_h68DcclLMwzYswn2nJ/exec";
     const appFrame = document.getElementById('appFrame');
 
-    // 1. URL 해시 또는 부모 로컬스토리지에서 저장값 추출
-    function getStoredPref() {
-      let team = '';
-      let name = '';
+    // 1. 부모 창(1st-party) 로컬스토리지에서 기존 설정 읽기
+    let savedTeam = '';
+    let savedName = '';
+    try {
+      savedTeam = localStorage.getItem('station_user_team') || '';
+      savedName = localStorage.getItem('station_user_name') || '';
+    } catch(e) {}
 
-      // 해시(#team=2&name=홍길동) 우선 확인
-      if (location.hash && location.hash.length > 1) {
-        const params = new URLSearchParams(location.hash.substring(1));
-        team = params.get('team') || '';
-        name = params.get('name') || '';
-      }
-
-      // 없으면 부모의 1st-party localStorage 확인
-      if (!team) {
-        try { team = localStorage.getItem('station_user_team') || ''; } catch(e) {}
-      }
-      if (!name) {
-        try { name = localStorage.getItem('station_user_name') || ''; } catch(e) {}
-      }
-
-      return { team: team || '3', name: name || '' };
+    // 2. URL 파라미터를 iframe src에 직접 결합하여 최초 로드 (사파리 ITP 우회 핵심)
+    let targetUrl = BASE_APP_URL;
+    if (savedName) {
+      targetUrl += "?initTeam=" + encodeURIComponent(savedTeam || '3') + "&initName=" + encodeURIComponent(savedName);
     }
+    appFrame.src = targetUrl;
 
-    // 2. 자식 iframe이 요청하거나 로드될 때 설정값 전달
-    function sendPrefToChild() {
-      const pref = getStoredPref();
-      if (pref.name && appFrame && appFrame.contentWindow) {
-        appFrame.contentWindow.postMessage({
-          type: "RESTORE_PREF",
-          team: pref.team,
-          name: pref.name
-        }, "*");
-      }
-    }
-
-    // iframe 로딩 완료 시 전송
-    appFrame.onload = function() {
-      sendPrefToChild();
-    };
-
-    // 자식 메시지 처리
+    // 3. 자식(iframe)에서 사용자가 팀이나 이름을 바꾸면 부모 로컬스토리지에 영구 보관
     window.addEventListener("message", function(e) {
-      if (!e.data) return;
+      if (!e || !e.data) return;
 
-      // 자식이 값 저장을 요청한 경우
       if (e.data.type === "SAVE_USER_PREF") {
-        const t = e.data.team || '3';
-        const n = (e.data.name || '').trim();
+        const newTeam = e.data.team || '3';
+        const newName = (e.data.name || '').trim();
 
-        if (n) {
-          // A. 1st-party localStorage에 저장
+        if (newName) {
           try {
-            localStorage.setItem('station_user_team', t);
-            localStorage.setItem('station_user_name', n);
-          } catch(err) {}
-
-          // B. ★ 사파리 ITP를 뚫는 핵심: 브라우저 URL 해시에 새겨둠 (화면 새로고침 없이)
-          try {
-            const newHash = '#team=' + encodeURIComponent(t) + '&name=' + encodeURIComponent(n);
-            history.replaceState(null, '', newHash);
+            localStorage.setItem('station_user_team', newTeam);
+            localStorage.setItem('station_user_name', newName);
           } catch(err) {}
         }
-      }
-
-      // 자식이 설정을 달라고 요청한 경우
-      if (e.data.type === "REQUEST_USER_PREF") {
-        sendPrefToChild();
       }
     }, false);
   </script>
