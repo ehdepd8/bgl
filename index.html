@@ -22,27 +22,22 @@
     const BASE_APP_URL = "https://script.google.com/macros/s/AKfycbx0aNwrGPIT5fb4CJnl2J6I2dZvYHdWVJ7H9NHPX3w15A0fC_h68DcclLMwzYswn2nJ/exec";
     const appFrame = document.getElementById('appFrame');
 
-    // 1. 현재 접속된 GitHub URL 쿼리 파라미터 우선 확인 (?initTeam=...&initName=...)
-    const urlParams = new URLSearchParams(window.location.search);
-    let currentTeam = urlParams.get('initTeam') || '';
-    let currentName = urlParams.get('initName') || '';
+    // 1. 부모 창(GitHub 도메인 자체)의 로컬스토리지 확인 (아이폰 사파리도 100% 영구 보존)
+    let savedTeam = '';
+    let savedName = '';
+    try {
+      savedTeam = localStorage.getItem('station_user_team') || '';
+      savedName = localStorage.getItem('station_user_name') || '';
+    } catch(e) {}
 
-    // 2. 주소창에 파라미터가 없다면 GitHub 자체 1st-party localStorage에서 복원
-    if (!currentName) {
-      try {
-        currentName = localStorage.getItem('station_user_name') || '';
-        currentTeam = localStorage.getItem('station_user_team') || '';
-      } catch(e) {}
-    }
-
-    // 3. ★ 핵심: 저장된 정보가 있으면 iframe src에 쿼리를 붙여서 띄움 (빈칸 로딩 원천 차단)
+    // 2. 외부 주소창은 순수 주소 그대로 두고, iframe 내부 src에만 파라미터를 결합하여 실행
     let finalSrc = BASE_APP_URL;
-    if (currentName) {
-      finalSrc += "?initTeam=" + encodeURIComponent(currentTeam || '3') + "&initName=" + encodeURIComponent(currentName);
+    if (savedName) {
+      finalSrc += "?initTeam=" + encodeURIComponent(savedTeam || '3') + "&initName=" + encodeURIComponent(savedName);
     }
     appFrame.src = finalSrc;
 
-    // 4. 자식 화면에서 팀이나 이름을 바꿀 때마다 GitHub 1st-party 스토리지에 영구 보관
+    // 3. 자식 화면(DutyView)에서 이름을 입력하거나 변경하면 부모 스토리지에 영구 보관
     window.addEventListener("message", function(e) {
       if (!e || !e.data) return;
 
@@ -50,6 +45,7 @@
         const newTeam = e.data.team || '3';
         const newName = (e.data.name || '').trim();
 
+        // ★ 빈칸으로 들어오는 잘못된 요청은 절대 기존 저장값을 덮어쓰지 않음
         if (newName) {
           try {
             localStorage.setItem('station_user_team', newTeam);
