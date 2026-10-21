@@ -16,6 +16,16 @@
   </style>
 </head>
 <body>
-  <iframe id="appFrame" src="https://script.google.com/macros/s/AKfycbx0aNwrGPIT5fb4CJnl2J6I2dZvYHdWVJ7H9NHPX3w15A0fC_h68DcclLMwzYswn2nJ/exec" allow="clipboard-read; clipboard-write; clipboard-write *; web-share"></iframe>
+  <iframe id="appFrame" allow="clipboard-read; clipboard-write; clipboard-write *; web-share"></iframe>
+
+  <script>
+    const BASE_APP_URL = "https://script.google.com/macros/s/AKfycbx0aNwrGPIT5fb4CJnl2J6I2dZvYHdWVJ7H9NHPX3w15A0fC_h68DcclLMwzYswn2nJ/exec";
+    
+    // ★ 사용자가 접속한 주소의 파라미터(?...)와 해시(#...)를 손상 없이 100% 그대로 전달
+    const currentQuery = window.location.search; 
+    const currentHash = window.location.hash;
+    
+    document.getElementById('appFrame').src = BASE_APP_URL + currentQuery + currentHash;
+  </script>
 </body>
 </html>
