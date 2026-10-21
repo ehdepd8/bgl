@@ -42,13 +42,15 @@
     if (!params.has("initTtRecords") && savedTtRecords) params.set("initTtRecords", savedTtRecords);
 
     let finalQuery = params.toString() ? ("?" + params.toString()) : "";
-
-    /* ▼▼▼▼▼ [팝업 차단용 from=github 파라미터 추가 - 나중에 삭제 시 이 블록만 삭제] ▼▼▼▼▼ */
-    const sep = finalQuery ? "&" : "?";
-    finalQuery += sep + "from=github";
-    /* ▲▲▲▲▲ [팝업 차단용 from=github 파라미터 끝] ▲▲▲▲▲ */
-
     appFrame.src = BASE_APP_URL + finalQuery + currentHash;
+
+    /* ▼▼▼▼▼ [팝업 차단용 신호 전송 - 나중에 팝업 완전히 삭제할 때 이 블록 삭제] ▼▼▼▼▼ */
+    appFrame.addEventListener("load", function() {
+      if (appFrame && appFrame.contentWindow) {
+        appFrame.contentWindow.postMessage({ type: "I_AM_GITHUB" }, "*");
+      }
+    });
+    /* ▲▲▲▲▲ [팝업 차단용 신호 전송 끝] ▲▲▲▲▲ */
 
     // 양방향 메시지 리스너 (시각표 + 근무표 완벽 통합)
     window.addEventListener("message", function(e) {
