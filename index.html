@@ -22,10 +22,7 @@
     const BASE_APP_URL = "https://script.google.com/macros/s/AKfycbx0aNwrGPIT5fb4CJnl2J6I2dZvYHdWVJ7H9NHPX3w15A0fC_h68DcclLMwzYswn2nJ/exec";
     const appFrame = document.getElementById('appFrame');
 
-    const ua = navigator.userAgent || navigator.vendor || window.opera;
-    const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-
-    // 저장된 설정값 불러오기
+    // 저장된 설정값 불러오기 (팀, 이름, 역명, 선택 시각)
     let savedDutyTeam = '', savedDutyName = '', savedStation = '', savedTtRecords = '';
     try {
       savedDutyTeam = localStorage.getItem('recent_station_team') || localStorage.getItem('station_user_team') || '3';
@@ -59,7 +56,7 @@
         } catch(err) {}
       }
 
-      // 2) 시각표 데이터 요청 응답
+      // 2) 시각표 데이터 요청 응답 (TimetableView 켜질 때)
       if (e.data.type === "REQ_TIMETABLE_PREF") {
         try {
           const st = localStorage.getItem('lastTimetableStation') || "대저역";
@@ -75,7 +72,7 @@
         } catch(err) {}
       }
 
-      // 3) 근무표 저장
+      // 3) 근무표 저장 (팀/이름)
       if (e.data.type === "SAVE_USER_PREF" || e.data.type === "SET_RECENT_DUTY_USER") {
         try {
           const t = e.data.team || '3';
@@ -85,6 +82,22 @@
             localStorage.setItem('recent_station_name', n);
             localStorage.setItem('station_user_team', t);
             localStorage.setItem('station_user_name', n);
+          }
+        } catch(err) {}
+      }
+
+      // 4) 근무표 데이터 요청 응답 (DutyView 켜질 때 - 아이폰 사파리 복원용)
+      if (e.data.type === "REQ_DUTY_USER_PREF") {
+        try {
+          const t = localStorage.getItem('recent_station_team') || localStorage.getItem('station_user_team') || '3';
+          const n = localStorage.getItem('recent_station_name') || localStorage.getItem('station_user_name') || '';
+
+          if (n && appFrame && appFrame.contentWindow) {
+            appFrame.contentWindow.postMessage({
+              type: "SEND_DUTY_USER_PREF",
+              team: t,
+              name: n
+            }, "*");
           }
         } catch(err) {}
       }
