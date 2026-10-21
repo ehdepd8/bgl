@@ -22,35 +22,33 @@
     const BASE_APP_URL = "https://script.google.com/macros/s/AKfycbx0aNwrGPIT5fb4CJnl2J6I2dZvYHdWVJ7H9NHPX3w15A0fC_h68DcclLMwzYswn2nJ/exec";
     const appFrame = document.getElementById('appFrame');
 
-    // 1. 가장 최근에 사용자가 기록한 팀과 이름 조회
-    let recentTeam = '';
-    let recentName = '';
+    // ★ 시각표와 동일한 GitHub 1st-party 로컬스토리지에서 읽기
+    let savedTeam = '';
+    let savedName = '';
     try {
-      recentTeam = localStorage.getItem('recent_station_team') || localStorage.getItem('station_user_team') || '';
-      recentName = localStorage.getItem('recent_station_name') || localStorage.getItem('station_user_name') || '';
+      savedTeam = localStorage.getItem('station_duty_team') || '';
+      savedName = localStorage.getItem('station_duty_name') || '';
     } catch(e) {}
 
-    // 2. 최근 값이 있으면 iframe 속 주소 뒤에만 붙여서 실행 (주소창은 기본 주소 유지)
-    let finalSrc = BASE_APP_URL;
-    if (recentName) {
-      finalSrc += "?initTeam=" + encodeURIComponent(recentTeam || '3') + "&initName=" + encodeURIComponent(recentName);
+    // 저장된 이름이 있으면 iframe 주소 뒤에 실어서 실행 (사파리 ITP 우회)
+    let initialUrl = BASE_APP_URL;
+    if (savedName) {
+      initialUrl += "?initTeam=" + encodeURIComponent(savedTeam || '3') + "&initName=" + encodeURIComponent(savedName);
     }
-    appFrame.src = finalSrc;
+    appFrame.src = initialUrl;
 
-    // 3. 자식 화면에서 최근 팀/이름이 변경되면 부모 스토리지 최신값으로 즉시 갱신
+    // 근무표에서 이름/팀을 바꾸는 즉시 시각표가 쓰는 GitHub 스토리지 영역에 영구 저장
     window.addEventListener("message", function(e) {
       if (!e || !e.data) return;
 
       if (e.data.type === "SET_RECENT_DUTY_USER" || e.data.type === "SAVE_USER_PREF") {
-        const t = e.data.team || '3';
-        const n = (e.data.name || '').trim();
+        const team = e.data.team || '3';
+        const name = (e.data.name || '').trim();
 
-        if (n) {
+        if (name) {
           try {
-            localStorage.setItem('recent_station_team', t);
-            localStorage.setItem('recent_station_name', n);
-            localStorage.setItem('station_user_team', t);
-            localStorage.setItem('station_user_name', n);
+            localStorage.setItem('station_duty_team', team);
+            localStorage.setItem('station_duty_name', name);
           } catch(err) {}
         }
       }
