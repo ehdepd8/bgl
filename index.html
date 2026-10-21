@@ -42,14 +42,20 @@
     if (!params.has("initTtRecords") && savedTtRecords) params.set("initTtRecords", savedTtRecords);
 
     let finalQuery = params.toString() ? ("?" + params.toString()) : "";
-    /* ▼▼▼▼▼ [팝업 차단용 해시 추가 - 나중에 팝업 완전히 삭제할 때 이 1줄 삭제] ▼▼▼▼▼ */
-    let finalHash = currentHash ? (currentHash + "&host=github") : "#host=github";
-    /* ▲▲▲▲▲ [팝업 차단용 해시 끝] ▲▲▲▲▲ */
     appFrame.src = BASE_APP_URL + finalQuery + currentHash;
 
-    // 양방향 메시지 리스너 (시각표 + 근무표 완벽 통합)
+    // 양방향 메시지 리스너 (시각표 + 근무표 + 호스트 확인 완벽 통합)
     window.addEventListener("message", function(e) {
       if (!e || !e.data) return;
+
+      /* ▼▼▼▼▼ [팝업 차단 응답 - 나중에 팝업 완전히 삭제할 때 이 블록 삭제] ▼▼▼▼▼ */
+      if (e.data.type === "PING_PARENT_ENV") {
+        const responseData = { type: "PONG_PARENT_ENV" };
+        if (e.source) e.source.postMessage(responseData, "*");
+        if (appFrame && appFrame.contentWindow) appFrame.contentWindow.postMessage(responseData, "*");
+        return;
+      }
+      /* ▲▲▲▲▲ [팝업 차단 응답 끝] ▲▲▲▲▲ */
 
       // 1) 시각표 저장
       if (e.data.type === "SAVE_TIMETABLE_PREF") {
