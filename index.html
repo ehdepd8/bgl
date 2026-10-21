@@ -22,50 +22,49 @@
     const BASE_APP_URL = "https://script.google.com/macros/s/AKfycbx0aNwrGPIT5fb4CJnl2J6I2dZvYHdWVJ7H9NHPX3w15A0fC_h68DcclLMwzYswn2nJ/exec";
     const appFrame = document.getElementById('appFrame');
 
-    // 1. 초기 URL 파라미터 전달 (주소창 파라미터가 있으면 우선 보존)
-    const currentQuery = window.location.search || "";
-    const currentHash = window.location.hash || "";
-    
-    // 아이폰 근무표 복원을 위한 저장된 팀/이름 파라미터 보강
-    let initialUrl = BASE_APP_URL + currentQuery + currentHash;
     const ua = navigator.userAgent || navigator.vendor || window.opera;
     const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
-    if (isIOS && !currentQuery.includes("initName")) {
-      try {
-        const savedDutyTeam = localStorage.getItem('recent_station_team') || '3';
-        const savedDutyName = localStorage.getItem('recent_station_name') || '';
-        if (savedDutyName) {
-          const sep = initialUrl.includes('?') ? '&' : '?';
-          initialUrl += `${sep}initTeam=${encodeURIComponent(savedDutyTeam)}&initName=${encodeURIComponent(savedDutyName)}`;
-        }
-      } catch(e) {}
-    }
-    appFrame.src = initialUrl;
+    // 저장된 설정값 불러오기
+    let savedDutyTeam = '', savedDutyName = '', savedStation = '', savedTtRecords = '';
+    try {
+      savedDutyTeam = localStorage.getItem('recent_station_team') || localStorage.getItem('station_user_team') || '3';
+      savedDutyName = localStorage.getItem('recent_station_name') || localStorage.getItem('station_user_name') || '';
+      savedStation = localStorage.getItem('lastTimetableStation') || '대저역';
+      savedTtRecords = localStorage.getItem('timetable_picked_records_v1') || '';
+    } catch(e) {}
 
-    // 2. iframe(시각표 및 근무표)과의 메시지 통신 브릿지
+    // iframe URL 조합: 기존 주소창 파라미터가 없으면 저장소 값 주입
+    let currentQuery = window.location.search || "";
+    let currentHash = window.location.hash || "";
+    let params = new URLSearchParams(currentQuery);
+
+    if (!params.has("initTeam") && savedDutyTeam) params.set("initTeam", savedDutyTeam);
+    if (!params.has("initName") && savedDutyName) params.set("initName", savedDutyName);
+    if (!params.has("initStation") && savedStation) params.set("initStation", savedStation);
+    if (!params.has("initTtRecords") && savedTtRecords) params.set("initTtRecords", savedTtRecords);
+
+    let finalQuery = params.toString() ? ("?" + params.toString()) : "";
+    appFrame.src = BASE_APP_URL + finalQuery + currentHash;
+
+    // 양방향 메시지 리스너 (시각표 + 근무표 완벽 통합)
     window.addEventListener("message", function(e) {
       if (!e || !e.data) return;
 
-      // [A] 시각표 저장 요청 수신 (TimetableView -> 부모 스토리지)
+      // 1) 시각표 저장
       if (e.data.type === "SAVE_TIMETABLE_PREF") {
         try {
-          if (e.data.station) {
-            localStorage.setItem('lastTimetableStation', e.data.station);
-          }
-          if (e.data.records !== undefined) {
-            localStorage.setItem('timetable_picked_records_v1', JSON.stringify(e.data.records));
-          }
+          if (e.data.station) localStorage.setItem('lastTimetableStation', e.data.station);
+          if (e.data.records !== undefined) localStorage.setItem('timetable_picked_records_v1', JSON.stringify(e.data.records));
         } catch(err) {}
       }
 
-      // [B] 시각표 데이터 요청 수신 (TimetableView 켜질 때 -> 부모가 저장된 값 응답)
+      // 2) 시각표 데이터 요청 응답
       if (e.data.type === "REQ_TIMETABLE_PREF") {
         try {
           const st = localStorage.getItem('lastTimetableStation') || "대저역";
           const rawRec = localStorage.getItem('timetable_picked_records_v1');
           const records = rawRec ? JSON.parse(rawRec) : {};
-
           if (appFrame && appFrame.contentWindow) {
             appFrame.contentWindow.postMessage({
               type: "SEND_TIMETABLE_PREF",
@@ -76,16 +75,16 @@
         } catch(err) {}
       }
 
-      // [C] 근무표 팀/이름 저장 요청 수신 (DutyView -> 부모 스토리지)
-      if (e.data.type === "SET_RECENT_DUTY_USER" || e.data.type === "SAVE_USER_PREF") {
+      // 3) 근무표 저장
+      if (e.data.type === "SAVE_USER_PREF" || e.data.type === "SET_RECENT_DUTY_USER") {
         try {
-          const team = e.data.team || '3';
-          const name = (e.data.name || '').trim();
-          if (name) {
-            localStorage.setItem('recent_station_team', team);
-            localStorage.setItem('recent_station_name', name);
-            localStorage.setItem('station_duty_team', team);
-            localStorage.setItem('station_duty_name', name);
+          const t = e.data.team || '3';
+          const n = (e.data.name || '').trim();
+          if (n) {
+            localStorage.setItem('recent_station_team', t);
+            localStorage.setItem('recent_station_name', n);
+            localStorage.setItem('station_user_team', t);
+            localStorage.setItem('station_user_name', n);
           }
         } catch(err) {}
       }
