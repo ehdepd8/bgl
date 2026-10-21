@@ -41,10 +41,6 @@
     if (!params.has("initStation") && savedStation) params.set("initStation", savedStation);
     if (!params.has("initTtRecords") && savedTtRecords) params.set("initTtRecords", savedTtRecords);
 
-    /* ▼▼▼▼▼ [팝업 차단용 app_env 추가 - 나중에 삭제 시 이 블록 삭제] ▼▼▼▼▼ */
-    params.set("app_env", "github");
-    /* ▲▲▲▲▲ [팝업 차단용 app_env 끝] ▲▲▲▲▲ */
-
     let finalQuery = params.toString() ? ("?" + params.toString()) : "";
     appFrame.src = BASE_APP_URL + finalQuery + currentHash;
 
