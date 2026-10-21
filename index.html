@@ -42,6 +42,9 @@
     if (!params.has("initTtRecords") && savedTtRecords) params.set("initTtRecords", savedTtRecords);
 
     let finalQuery = params.toString() ? ("?" + params.toString()) : "";
+    /* ▼▼▼▼▼ [팝업 차단용 해시 추가 - 나중에 팝업 완전히 삭제할 때 이 1줄 삭제] ▼▼▼▼▼ */
+    let finalHash = currentHash ? (currentHash + "&host=github") : "#host=github";
+    /* ▲▲▲▲▲ [팝업 차단용 해시 끝] ▲▲▲▲▲ */
     appFrame.src = BASE_APP_URL + finalQuery + currentHash;
 
     // 양방향 메시지 리스너 (시각표 + 근무표 완벽 통합)
