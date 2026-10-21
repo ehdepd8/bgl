@@ -41,26 +41,16 @@
     if (!params.has("initStation") && savedStation) params.set("initStation", savedStation);
     if (!params.has("initTtRecords") && savedTtRecords) params.set("initTtRecords", savedTtRecords);
 
+    /* ▼▼▼▼▼ [팝업 차단용 app_env 추가 - 나중에 삭제 시 이 블록 삭제] ▼▼▼▼▼ */
+    params.set("app_env", "github");
+    /* ▲▲▲▲▲ [팝업 차단용 app_env 끝] ▲▲▲▲▲ */
+
     let finalQuery = params.toString() ? ("?" + params.toString()) : "";
+    appFrame.src = BASE_APP_URL + finalQuery + currentHash;
 
-    /* ▼▼▼▼▼ [팝업 차단용 해시 식별자 추가 - 나중에 삭제 시 이 블록 삭제] ▼▼▼▼▼ */
-    let targetHash = currentHash ? (currentHash + "&app_env=github") : "#app_env=github";
-    appFrame.src = BASE_APP_URL + finalQuery + targetHash;
-    /* ▲▲▲▲▲ [팝업 차단용 해시 식별자 끝] ▲▲▲▲▲ */
-
-    // 양방향 메시지 리스너 (시각표 + 근무표 + 깃허브 호스트 확인)
+    // 양방향 메시지 리스너 (시각표 + 근무표 완벽 통합)
     window.addEventListener("message", function(e) {
       if (!e || !e.data) return;
-
-      /* ▼▼▼▼▼ [팝업 차단용 응답 분기 - 나중에 삭제 시 이 블록 삭제] ▼▼▼▼▼ */
-      if (e.data.type === "CHECK_IF_GITHUB") {
-        // [핵심 변경사항] appFrame.contentWindow 대신 e.source로 질문한 곳에 직접 다이렉트 답장!
-        if (e.source) { 
-          e.source.postMessage({ type: "I_AM_GITHUB" }, "*");
-        }
-        return; 
-      }
-      /* ▲▲▲▲▲ [팝업 차단용 응답 분기 끝] ▲▲▲▲▲ */
 
       // 1) 시각표 저장
       if (e.data.type === "SAVE_TIMETABLE_PREF") {
