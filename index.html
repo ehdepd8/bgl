@@ -42,13 +42,17 @@
     if (!params.has("initTtRecords") && savedTtRecords) params.set("initTtRecords", savedTtRecords);
 
     let finalQuery = params.toString() ? ("?" + params.toString()) : "";
-    appFrame.src = BASE_APP_URL + finalQuery + currentHash;
+
+    /* ▼▼▼▼▼ [팝업 차단용 해시 식별자 추가 - 나중에 삭제 시 이 블록 삭제] ▼▼▼▼▼ */
+    let targetHash = currentHash ? (currentHash + "&app_env=github") : "#app_env=github";
+    appFrame.src = BASE_APP_URL + finalQuery + targetHash;
+    /* ▲▲▲▲▲ [팝업 차단용 해시 식별자 끝] ▲▲▲▲▲ */
 
     // 양방향 메시지 리스너 (시각표 + 근무표 + 깃허브 호스트 확인)
     window.addEventListener("message", function(e) {
       if (!e || !e.data) return;
 
-      /* ▼▼▼▼▼ [팝업 차단용 응답 분기 - 나중에 팝업 완전히 삭제할 때 이 블록 삭제] ▼▼▼▼▼ */
+      /* ▼▼▼▼▼ [팝업 차단용 응답 분기 - 나중에 삭제 시 이 블록 삭제] ▼▼▼▼▼ */
       if (e.data.type === "CHECK_IF_GITHUB") {
         if (appFrame && appFrame.contentWindow) {
           appFrame.contentWindow.postMessage({ type: "I_AM_GITHUB" }, "*");
