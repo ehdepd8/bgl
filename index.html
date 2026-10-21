@@ -22,22 +22,30 @@
     const BASE_APP_URL = "https://script.google.com/macros/s/AKfycbx0aNwrGPIT5fb4CJnl2J6I2dZvYHdWVJ7H9NHPX3w15A0fC_h68DcclLMwzYswn2nJ/exec";
     const appFrame = document.getElementById('appFrame');
 
-    // ★ 시각표와 동일한 GitHub 1st-party 로컬스토리지에서 읽기
-    let savedTeam = '';
-    let savedName = '';
-    try {
-      savedTeam = localStorage.getItem('station_duty_team') || '';
-      savedName = localStorage.getItem('station_duty_name') || '';
-    } catch(e) {}
+    // 기기 감지: iOS(아이폰/아이패드) 여부 판별
+    const ua = navigator.userAgent || navigator.vendor || window.opera;
+    const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
-    // 저장된 이름이 있으면 iframe 주소 뒤에 실어서 실행 (사파리 ITP 우회)
-    let initialUrl = BASE_APP_URL;
-    if (savedName) {
-      initialUrl += "?initTeam=" + encodeURIComponent(savedTeam || '3') + "&initName=" + encodeURIComponent(savedName);
+    if (isIOS) {
+      // [아이폰] iframe 스토리지 휘발을 막기 위해 부모 창(1st-party) 스토리지에서 읽어 주입
+      let savedTeam = '';
+      let savedName = '';
+      try {
+        savedTeam = localStorage.getItem('station_duty_team') || '';
+        savedName = localStorage.getItem('station_duty_name') || '';
+      } catch(e) {}
+
+      let initialUrl = BASE_APP_URL;
+      if (savedName) {
+        initialUrl += "?initTeam=" + encodeURIComponent(savedTeam || '3') + "&initName=" + encodeURIComponent(savedName);
+      }
+      appFrame.src = initialUrl;
+    } else {
+      // [갤럭시/안드로이드] 자체 스토리지가 완벽 보존되므로 옛날 파라미터 주입을 원천 차단! (최근 이름 롤백 방지)
+      appFrame.src = BASE_APP_URL;
     }
-    appFrame.src = initialUrl;
 
-    // 근무표에서 이름/팀을 바꾸는 즉시 시각표가 쓰는 GitHub 스토리지 영역에 영구 저장
+    // 근무표(DutyView)에서 팀/이름이 바뀔 때마다 부모 창(GitHub) 스토리지 실시간 동기화
     window.addEventListener("message", function(e) {
       if (!e || !e.data) return;
 
