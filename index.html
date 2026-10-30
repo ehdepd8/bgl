@@ -122,6 +122,9 @@
       if (!params.has("initStation") && savedStation) params.set("initStation", savedStation);
       if (!params.has("initTtRecords") && savedTtRecords) params.set("initTtRecords", savedTtRecords);
 
+      // 팀, 이름, 역, 시각표 파라미터 전달 바로 아래에 추가
+      params.set("portalKey", "bgl_verified");
+
       let finalQuery = params.toString() ? ("?" + params.toString()) : "";
       appFrame.src = BASE_APP_URL + finalQuery + currentHash;
     }
