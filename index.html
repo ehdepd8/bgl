@@ -197,84 +197,59 @@
       }
     }
 
-    // 4. SHA-256 해시 PIN 검증 로직 
+    // 4. SHA-256 해시 PIN 검증 로직
     const TARGET_PIN_HASH = "f74c7e63b39d1b09b0b4710dbdd63c1b69826a6a12b4b4ea9b007d4b4a161271";
 
-    function calcSha256(ascii) {
-      function rightRotate(value, amount) { return (value >>> amount) | (value << (32 - amount)); }
-      var mathPow = Math.pow, maxWord = mathPow(2, 32), lengthProperty = 'length', i, j, result = '', words = [];
-      var asciiBitLength = ascii[lengthProperty] * 8;
-      var hash = calcSha256.h = calcSha256.h || [], k = calcSha256.k = calcSha256.k || [];
-      var primeCounter = k[lengthProperty], isComposite = {};
-      for (var candidate = 2; primeCounter < 64; candidate++) {
-        if (!isComposite[candidate]) {
-          for (i = 0; i < 313; i += candidate) { isComposite[i] = candidate; }
-          hash[primeCounter] = (mathPow(candidate, .5) * maxWord) | 0;
-          k[primeCounter++] = (mathPow(candidate, 1/3) * maxWord) | 0;
-        }
-      }
-      ascii += '\x80';
-      while (ascii[lengthProperty] % 64 - 56) ascii += '\x00';
-      for (i = 0; i < ascii[lengthProperty]; i++) {
-        j = ascii.charCodeAt(i);
-        if (j >> 8) return;
-        words[i >> 2] |= j << ((3 - i) % 4) * 8;
-      }
-      words[words[lengthProperty]] = ((asciiBitLength / maxWord) | 0);
-      words[words[lengthProperty]] = (asciiBitLength);
-      for (j = 0; j < words[lengthProperty];) {
-        var w = words.slice(j, j += 16), oldHash = hash;
-        hash = hash.slice(0, 8);
-        for (i = 0; i < 64; i++) {
-          var i2 = i + j, w15 = w[i - 15], w2 = w[i - 2];
-          var a = hash[0], e = hash[4];
-          var temp1 = hash[7] + (rightRotate(e, 6) ^ rightRotate(e, 11) ^ rightRotate(e, 25))
-            + ((e & hash[5]) ^ ((~e) & hash[6])) + k[i]
-            + (w[i] = (i < 16) ? w[i] : (w[i - 16] + (rightRotate(w15, 7) ^ rightRotate(w15, 18) ^ (w15 >>> 3)) + w[i - 7] + (rightRotate(w2, 17) ^ rightRotate(w2, 19) ^ (w2 >>> 10))) | 0);
-          var temp2 = (rightRotate(a, 2) ^ rightRotate(a, 13) ^ rightRotate(a, 22)) + ((a & hash[1]) ^ (a & hash[2]) ^ (hash[1] & hash[2]));
-          hash = [(temp1 + temp2) | 0].concat(hash);
-          hash[4] = (hash[4] + temp1) | 0;
-        }
-        for (i = 0; i < 8; i++) { hash[i] = (hash[i] + oldHash[i]) | 0; }
-      }
-      for (i = 0; i < 8; i++) {
-        for (i = 0; i < 4; i++) {
-          var current = (hash[i] >> (24 - i * 8)) & 255;
-          result += ((current < 16) ? '0' : '') + current.toString(16);
-        }
-      }
-      return result;
+    // 브라우저 표준 Web Crypto API 기반 SHA-256 계산 함수
+    async function calcSha256(text) {
+      const msgBuffer = new TextEncoder().encode(text);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
     }
 
-    function verifyPortalPin() {
+    // async 함수로 선언하여 비동기 계산을 확실하게 대기(await) 후 비교
+    async function verifyPortalPin() {
       const msg = document.getElementById('pStatusMsg');
       const val = currentPortalPin.toString().trim();
 
-      // 9607 해시값과 즉시 비교
-      const isValid = (val.length === 4 && calcSha256(val) === TARGET_PIN_HASH);
+      if (val.length !== 4) return;
 
-      if (isValid) {
-        if (msg) {
-          msg.innerText = "인증 성공! 접속합니다.";
-          msg.style.color = "#38bdf8";
+      try {
+        const inputHash = await calcSha256(val);
+        const isValid = (inputHash === TARGET_PIN_HASH);
+
+        if (isValid) {
+          if (msg) {
+            msg.innerText = "인증 성공! 접속합니다.";
+            msg.style.color = "#38bdf8";
+          }
+          try {
+            localStorage.setItem(AUTH_KEY, 'true');
+          } catch(e) {}
+
+          setTimeout(function() {
+            if (pinScreen) pinScreen.style.display = 'none';
+            if (logoutBtn) logoutBtn.style.display = 'inline-flex';
+            loadMainApp();
+          }, 300);
+        } else {
+          if (msg) {
+            msg.innerText = "PIN 번호가 일치하지 않습니다.";
+            msg.style.color = "#ef4444";
+          }
+          setTimeout(clearPortalPin, 600);
         }
-        try {
-          localStorage.setItem(AUTH_KEY, 'true');
-        } catch(e) {}
-
-        setTimeout(function() {
-          if (pinScreen) pinScreen.style.display = 'none';
-          if (logoutBtn) logoutBtn.style.display = 'inline-flex';
-          loadMainApp();
-        }, 300);
-      } else {
+      } catch (err) {
+        // 암호화 API 예외 발생 시 안전 처리
         if (msg) {
-          msg.innerText = "PIN 번호가 일치하지 않습니다.";
+          msg.innerText = "오류 발생: 다시 입력해주세요.";
           msg.style.color = "#ef4444";
         }
         setTimeout(clearPortalPin, 600);
       }
     }
+
 
     // 5. 수동 로그아웃
     function handlePortalLogout() {
