@@ -63,7 +63,11 @@
         <span class="pin-dot" id="pDot3" style="width: 14px; height: 14px; border-radius: 50%; border: 2px solid #475569; background: transparent; transition: all 0.2s;"></span>
       </div>
 
-      <div id="pStatusMsg" style="font-size: 11px; color: #94a3b8; height: 16px; margin-bottom: 14px; font-weight: 600;">4자리 보안 PIN을 입력하세요(힌트:대저)</div>
+      <!-- 상태 메시지 (자동 로그인 유지 안내 추가) -->
+      <div id="pStatusMsg" style="font-size: 11px; color: #94a3b8; line-height: 1.4; margin-bottom: 14px; font-weight: 600; text-align: center; word-break: keep-all;">
+        4자리 보안 PIN을 입력하세요 (힌트: 대저)<br>
+        <span style="font-size: 10px; color: #64748b; font-weight: 500;">(로그아웃 또는 비밀번호 변경 전까진 로그인 유지됨)</span>
+      </div>
 
       <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%;">
         <button type="button" onclick="pressPortalPin('1')" style="height: 50px; font-size: 20px; font-weight: bold; background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 12px; cursor: pointer;">1</button>
