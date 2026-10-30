@@ -197,53 +197,35 @@
       }
     }
 
-    // 4. SHA-256 해시 PIN 검증 로직
-    const TARGET_PIN_HASH = "f74c7e63b39d1b09b0b4710dbdd63c1b69826a6a12b4b4ea9b007d4b4a161271";
+    // 4. 난독화 PIN 검증 로직
+    const SECRET_PIN_KEY = "OTYwNw==";
 
-    // 브라우저 표준 Web Crypto API 기반 SHA-256 계산 함수
-    async function calcSha256(text) {
-      const msgBuffer = new TextEncoder().encode(text);
-      const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    }
-
-    // async 함수로 선언하여 비동기 계산을 확실하게 대기(await) 후 비교
-    async function verifyPortalPin() {
+    function verifyPortalPin() {
       const msg = document.getElementById('pStatusMsg');
       const val = currentPortalPin.toString().trim();
 
       if (val.length !== 4) return;
 
-      try {
-        const inputHash = await calcSha256(val);
-        const isValid = (inputHash === TARGET_PIN_HASH);
+      // 브라우저 내장 btoa로 즉시 변환하여 0초 판별 (비동기 오류 원천 차단)
+      const isValid = (btoa(val) === SECRET_PIN_KEY);
 
-        if (isValid) {
-          if (msg) {
-            msg.innerText = "인증 성공! 접속합니다.";
-            msg.style.color = "#38bdf8";
-          }
-          try {
-            localStorage.setItem(AUTH_KEY, 'true');
-          } catch(e) {}
-
-          setTimeout(function() {
-            if (pinScreen) pinScreen.style.display = 'none';
-            if (logoutBtn) logoutBtn.style.display = 'inline-flex';
-            loadMainApp();
-          }, 300);
-        } else {
-          if (msg) {
-            msg.innerText = "PIN 번호가 일치하지 않습니다.";
-            msg.style.color = "#ef4444";
-          }
-          setTimeout(clearPortalPin, 600);
-        }
-      } catch (err) {
-        // 암호화 API 예외 발생 시 안전 처리
+      if (isValid) {
         if (msg) {
-          msg.innerText = "오류 발생: 다시 입력해주세요.";
+          msg.innerText = "인증 성공! 접속합니다.";
+          msg.style.color = "#38bdf8";
+        }
+        try {
+          localStorage.setItem(AUTH_KEY, 'true');
+        } catch(e) {}
+
+        setTimeout(function() {
+          if (pinScreen) pinScreen.style.display = 'none';
+          if (logoutBtn) logoutBtn.style.display = 'inline-flex';
+          loadMainApp();
+        }, 300);
+      } else {
+        if (msg) {
+          msg.innerText = "PIN 번호가 일치하지 않습니다.";
           msg.style.color = "#ef4444";
         }
         setTimeout(clearPortalPin, 600);
