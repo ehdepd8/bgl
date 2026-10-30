@@ -191,7 +191,7 @@
       updatePortalPinDots();
       const msg = document.getElementById('pStatusMsg');
       if (msg) {
-        msg.innerText = "4자리 보안 PIN을 입력하세요(힌트:대저)";
+        msg.innerHTML = "4자리 보안 PIN을 입력하세요 (힌트: 대저)<br><span style='font-size: 10px; color: #64748b; font-weight: 500;'>(로그아웃 또는 비밀번호 변경 전까지 로그인 유지됨)</span>";
         msg.style.color = "#94a3b8";
       }
     }
