@@ -19,7 +19,7 @@
       top: 21px;
       right: 24px;
       z-index: 99999;
-      display: none;        /* 초기 상태: 숨김 */
+      display: none;
       align-items: center;
       gap: 3px;
       font-size: 11px;
@@ -41,12 +41,12 @@
   </style>
 </head>
 <body>
-  <!-- 내부 iframe 화면 로딩이 완전히 끝난 뒤에만 나타나는 로그아웃 버튼 -->
+  <!-- 화면 렌더링 완료 시에만 나타나는 로그아웃 버튼 -->
   <button type="button" id="portalLogoutBtn" onclick="handlePortalLogout()" style="display: none;">
     <span>🔒</span> 로그아웃
   </button>
 
-  <!-- 메인 웹앱 iframe -->
+  <!-- 메인 iframe -->
   <iframe id="appFrame" allow="clipboard-read; clipboard-write; clipboard-write *; web-share"></iframe>
 
   <!-- 관제 스타일 PIN 인증 화면 -->
@@ -56,7 +56,6 @@
       <div style="font-size: 11px; font-weight: 800; color: #38bdf8; letter-spacing: 2px; margin-bottom: 4px;">BGL OCC CONTROL</div>
       <div style="font-size: 16px; font-weight: 700; margin-bottom: 20px; color: #ffffff;">통합 포털 보안 인증</div>
 
-      <!-- 4자리 PIN 인디케이터 -->
       <div style="display: flex; gap: 14px; margin-bottom: 24px;">
         <span class="pin-dot" id="pDot0" style="width: 14px; height: 14px; border-radius: 50%; border: 2px solid #475569; background: transparent; transition: all 0.2s;"></span>
         <span class="pin-dot" id="pDot1" style="width: 14px; height: 14px; border-radius: 50%; border: 2px solid #475569; background: transparent; transition: all 0.2s;"></span>
@@ -64,10 +63,8 @@
         <span class="pin-dot" id="pDot3" style="width: 14px; height: 14px; border-radius: 50%; border: 2px solid #475569; background: transparent; transition: all 0.2s;"></span>
       </div>
 
-      <!-- 상태 메시지 -->
       <div id="pStatusMsg" style="font-size: 11px; color: #94a3b8; height: 16px; margin-bottom: 14px; font-weight: 600;">4자리 보안 PIN을 입력하세요(힌트:대저)</div>
 
-      <!-- 3x4 키패드 -->
       <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%;">
         <button type="button" onclick="pressPortalPin('1')" style="height: 50px; font-size: 20px; font-weight: bold; background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 12px; cursor: pointer;">1</button>
         <button type="button" onclick="pressPortalPin('2')" style="height: 50px; font-size: 20px; font-weight: bold; background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 12px; cursor: pointer;">2</button>
@@ -87,9 +84,10 @@
 
   <script>
     /* =========================================================================
-       접속 보안 검증 및 자동 로그인 제어
+       구글 서버 직접 검증 기반 포털 제어
        ========================================================================= */
     const AUTH_KEY = 'bgl_auth_v2';
+    const SAVED_PIN_KEY = 'bgl_verified_pin';
     let currentPortalPin = "";
 
     const BASE_APP_URL = "https://script.google.com/macros/s/AKfycbx0aNwrGPIT5fb4CJnl2J6I2dZvYHdWVJ7H9NHPX3w15A0fC_h68DcclLMwzYswn2nJ/exec";
@@ -97,17 +95,17 @@
     const pinScreen = document.getElementById('portalPinScreen');
     const logoutBtn = document.getElementById('portalLogoutBtn');
 
-    // 1. iframe 지연 로딩 함수
+    // 1. iframe 로딩 함수 (서버 인증 PIN 및 키 동시 전달)
     function loadMainApp() {
-      // 이미 로드된 상태면 중복 로드 방지
       if (appFrame.src && appFrame.src !== "about:blank") return;
 
-      let savedDutyTeam = '', savedDutyName = '', savedStation = '', savedTtRecords = '';
+      let savedDutyTeam = '', savedDutyName = '', savedStation = '', savedTtRecords = '', verifiedPin = '';
       try {
         savedDutyTeam = localStorage.getItem('recent_station_team') || localStorage.getItem('station_user_team') || '3';
         savedDutyName = localStorage.getItem('recent_station_name') || localStorage.getItem('station_user_name') || '';
         savedStation = localStorage.getItem('lastTimetableStation') || '대저역';
         savedTtRecords = localStorage.getItem('timetable_picked_records_v1') || '';
+        verifiedPin = localStorage.getItem(SAVED_PIN_KEY) || '';
       } catch(e) {}
 
       let currentQuery = window.location.search || "";
@@ -119,10 +117,11 @@
       if (!params.has("initStation") && savedStation) params.set("initStation", savedStation);
       if (!params.has("initTtRecords") && savedTtRecords) params.set("initTtRecords", savedTtRecords);
 
-      // 구글 앱스 스크립트 서버 단독 접속 차단 통과 키
+      // 구글 서버 통과 파라미터 (포털키 + 서버검증된 PIN)
       params.set("portalKey", "bgl_verified");
+      params.set("accessPin", verifiedPin);
 
-      // 웹앱 화면 로딩이 완전히 완료된 시점에만 로그아웃 버튼 노출
+      // 화면이 완전히 로딩된 후 로그아웃 버튼 표시
       appFrame.onload = function() {
         if (logoutBtn) logoutBtn.style.display = 'inline-flex';
       };
@@ -135,7 +134,7 @@
     function checkPortalAuth() {
       let isAuth = false;
       try {
-        isAuth = (localStorage.getItem(AUTH_KEY) === 'true');
+        isAuth = (localStorage.getItem(AUTH_KEY) === 'true' && localStorage.getItem(SAVED_PIN_KEY));
       } catch(e) {}
 
       if (isAuth) {
@@ -172,7 +171,7 @@
       updatePortalPinDots();
 
       if (currentPortalPin.length === 4) {
-        setTimeout(verifyPortalPin, 100);
+        setTimeout(verifyPortalPinOnServer, 100);
       }
     }
 
@@ -193,38 +192,62 @@
       }
     }
 
-    // 4. 난독화 PIN 검증 로직
-    const SECRET_PIN_KEY = "OTYwNw==";
-
-    function verifyPortalPin() {
+    // 4. 구글 서버 직접 검증 로직 (깃허브 소스코드에 정답 PIN이 일절 남지 않음)
+    function verifyPortalPinOnServer() {
       const msg = document.getElementById('pStatusMsg');
       const val = currentPortalPin.toString().trim();
 
       if (val.length !== 4) return;
 
-      const isValid = (btoa(val) === SECRET_PIN_KEY);
+      if (msg) {
+        msg.innerText = "서버 보안 인증 확인 중...";
+        msg.style.color = "#38bdf8";
+      }
 
-      if (isValid) {
-        if (msg) {
-          msg.innerText = "인증 성공! 접속합니다.";
-          msg.style.color = "#38bdf8";
+      // JSONP 방식으로 구글 서버에 직접 질의
+      const script = document.createElement('script');
+      const callbackName = 'pin_res_' + Date.now();
+
+      window[callbackName] = function(res) {
+        if (script.parentNode) script.parentNode.removeChild(script);
+        delete window[callbackName];
+
+        if (res && res.success) {
+          if (msg) {
+            msg.innerText = "인증 성공! 접속합니다.";
+            msg.style.color = "#38bdf8";
+          }
+          try {
+            localStorage.setItem(SAVED_PIN_KEY, val);
+            localStorage.setItem(AUTH_KEY, 'true');
+          } catch(e) {}
+
+          setTimeout(function() {
+            if (pinScreen) pinScreen.style.display = 'none';
+            loadMainApp();
+          }, 300);
+        } else {
+          if (msg) {
+            msg.innerText = "PIN 번호가 일치하지 않습니다.";
+            msg.style.color = "#ef4444";
+          }
+          setTimeout(clearPortalPin, 600);
         }
-        try {
-          localStorage.setItem(AUTH_KEY, 'true');
-        } catch(e) {}
+      };
 
-        setTimeout(function() {
-          if (pinScreen) pinScreen.style.display = 'none';
-          // 웹앱 화면 렌더링 완료 전 로그아웃 버튼 조기 노출 방지: loadMainApp()만 호출
-          loadMainApp();
-        }, 300);
-      } else {
+      // 네트워크 오류 또는 서버 미응답 시 예외 처리
+      script.onerror = function() {
+        if (script.parentNode) script.parentNode.removeChild(script);
+        delete window[callbackName];
         if (msg) {
-          msg.innerText = "PIN 번호가 일치하지 않습니다.";
+          msg.innerText = "서버 통신 실패: 다시 시도해 주세요.";
           msg.style.color = "#ef4444";
         }
         setTimeout(clearPortalPin, 600);
-      }
+      };
+
+      script.src = BASE_APP_URL + "?action=VERIFY_PIN&pin=" + encodeURIComponent(val) + "&callback=" + callbackName;
+      document.body.appendChild(script);
     }
 
     // 5. 수동 로그아웃
@@ -232,11 +255,12 @@
       if (!confirm("로그아웃하시겠습니까? (자동 로그인이 해제됩니다)")) return;
       try {
         localStorage.removeItem(AUTH_KEY);
+        localStorage.removeItem(SAVED_PIN_KEY);
       } catch(e) {}
       checkPortalAuth();
     }
 
-    // 6. 시각표 및 사용자 세션 유지 리스너
+    // 6. 기존 메시지 리스너 (시각표/근무표 양방향 통신 유지)
     window.addEventListener("message", function(e) {
       if (!e || !e.data) return;
 
