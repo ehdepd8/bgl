@@ -14,30 +14,30 @@
     html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #ffffff; }
     iframe { width: 100%; height: 100%; border: none; display: block; }
 
-    /* 우측 상단 플로팅 로그아웃 버튼 */
+   /* 내부 헤더 높이에 맞춘 자연스러운 로그아웃 버튼 */
     #portalLogoutBtn {
       position: fixed;
-      top: 10px;
-      right: 12px;
+      top: 18px;            /* 헤더 타이틀 높이에 맞춰 살짝 아래로 */
+      right: 22px;          /* 흰색 카드 우측 여백 안쪽으로 살짝 이동 */
       z-index: 99999;
       display: inline-flex;
       align-items: center;
-      gap: 4px;
+      gap: 3px;
       font-size: 11px;
       font-weight: 700;
-      color: #94a3b8;
-      background-color: rgba(15, 23, 42, 0.85);
-      border: 1px solid #334155;
-      padding: 4px 9px;
-      border-radius: 9999px;
+      color: #64748b;       /* 튀지 않는 차분한 회색 */
+      background-color: #f1f5f9; /* 연한 배경 */
+      border: 1px solid #cbd5e1;
+      padding: 3px 8px;
+      border-radius: 6px;
       cursor: pointer;
-      backdrop-filter: blur(4px);
-      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
       transition: all 0.2s;
     }
     #portalLogoutBtn:hover {
-      color: #f43f5e;
-      border-color: #e11d48;
+      color: #e11d48;
+      border-color: #fca5a5;
+      background-color: #fff1f2;
     }
   </style>
 </head>
