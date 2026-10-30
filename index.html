@@ -250,31 +250,33 @@
       const callbackName = 'pin_res_' + Date.now();
 
       window[callbackName] = function(res) {
-        if (script.parentNode) script.parentNode.removeChild(script);
-        delete window[callbackName];
+  if (script.parentNode) script.parentNode.removeChild(script);
+  delete window[callbackName];
 
-        if (res && res.success) {
-          if (msg) {
-            msg.innerText = "인증 성공! 접속합니다.";
-            msg.style.color = "#22c55e";
-          }
-          try {
-            localStorage.setItem(SAVED_PIN_KEY, val);
-            localStorage.setItem(AUTH_KEY, 'true');
-          } catch(e) {}
+  if (res && res.success) {
+    if (msg) {
+      msg.innerText = "인증 성공! 접속합니다.";
+      msg.style.color = "#22c55e";
+    }
+    try {
+      localStorage.setItem(SAVED_PIN_KEY, val);
+      localStorage.setItem(AUTH_KEY, 'true');
+    } catch(e) {}
 
-          setTimeout(function() {
-            if (pinScreen) pinScreen.style.display = 'none';
-            loadMainApp();
-          }, 300);
-        } else {
-          if (msg) {
-            msg.innerText = "PIN 번호가 일치하지 않습니다.";
-            msg.style.color = "#ef4444";
-          }
-          setTimeout(clearPortalPin, 600);
-        }
-      };
+    setTimeout(function() {
+      if (pinScreen) pinScreen.style.display = 'none';
+      // Buto yo gusohoka ihita igaragazwa ako kanya:
+      if (logoutBtn) logoutBtn.style.display = 'inline-flex';
+      loadMainApp();
+    }, 300);
+  } else {
+    if (msg) {
+      msg.innerText = "PIN 번호가 일치하지 않습니다.";
+      msg.style.color = "#ef4444";
+    }
+    setTimeout(clearPortalPin, 600);
+  }
+};
 
       script.onerror = function() {
         if (script.parentNode) script.parentNode.removeChild(script);
