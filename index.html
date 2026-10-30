@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>역근무현황</title>
+  <title>역무운영 포털</title>
   <link rel="apple-touch-icon" sizes="192x192" href="https://i.ibb.co/zWmkwfRw/image.png">
   <link rel="icon" type="image/png" sizes="192x192" href="https://i.ibb.co/zWmkwfRw/image.png">
   <link rel="shortcut icon" href="https://i.ibb.co/zWmkwfRw/image.png">
-  <meta property="og:title" content="역근무현황">
+  <meta property="og:title" content="역무운영 포털">
   <meta property="og:description" content="부산-김해경전철 역무운영 포털">
   <meta property="og:image" content="https://i.ibb.co/zWmkwfRw/image.png">
   <style>
@@ -50,39 +50,72 @@
   <iframe id="appFrame" allow="clipboard-read; clipboard-write; clipboard-write *; web-share"></iframe>
 
   <!-- 관제 스타일 PIN 인증 화면 -->
-  <div id="portalPinScreen" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: #0b1120; z-index: 9999999; flex-direction: column; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; backdrop-filter: blur(10px);">
-    <div style="background-color: #0f172a; border: 1px solid #1e293b; border-radius: 20px; width: 100%; max-width: 320px; padding: 28px 20px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8); display: flex; flex-direction: column; align-items: center; color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  <div id="portalPinScreen" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: #0b1120; z-index: 9999999; flex-direction: column; align-items: center; justify-content: center; padding: 20px 16px; box-sizing: border-box; backdrop-filter: blur(10px); overflow-y: auto;">
+    <div style="background-color: #0f172a; border: 1px solid #1e293b; border-radius: 20px; width: 100%; max-width: 330px; padding: 24px 18px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8); display: flex; flex-direction: column; align-items: center; color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; box-sizing: border-box;">
       
       <div style="font-size: 15px; font-weight: 800; color: #38bdf8; letter-spacing: 2px; margin-bottom: 4px;">BGL STATION OPS</div>
-      <div style="font-size: 17px; font-weight: 700; margin-bottom: 20px; color: #ffffff;">역무운영 포털 보안 인증</div>
+      <div style="font-size: 17px; font-weight: 700; margin-bottom: 18px; color: #ffffff;">역무운영 포털 보안 인증</div>
 
-      <div style="display: flex; gap: 14px; margin-bottom: 24px;">
+      <div style="display: flex; gap: 14px; margin-bottom: 20px;">
         <span class="pin-dot" id="pDot0" style="width: 14px; height: 14px; border-radius: 50%; border: 2px solid #475569; background: transparent; transition: all 0.2s;"></span>
         <span class="pin-dot" id="pDot1" style="width: 14px; height: 14px; border-radius: 50%; border: 2px solid #475569; background: transparent; transition: all 0.2s;"></span>
         <span class="pin-dot" id="pDot2" style="width: 14px; height: 14px; border-radius: 50%; border: 2px solid #475569; background: transparent; transition: all 0.2s;"></span>
         <span class="pin-dot" id="pDot3" style="width: 14px; height: 14px; border-radius: 50%; border: 2px solid #475569; background: transparent; transition: all 0.2s;"></span>
       </div>
 
-      <!-- 상태 메시지 (수정하신 폰트 크기 및 안내 문구 반영) -->
+      <!-- 상태 메시지 -->
       <div id="pStatusMsg" style="font-size: 14px; color: #94a3b8; line-height: 1.4; margin-bottom: 14px; font-weight: 600; text-align: center; word-break: keep-all;">
         4자리 보안 PIN을 입력하세요 (힌트: 대저)<br>
         <span style="font-size: 13px; color: #64748b; font-weight: 500;">(로그아웃 또는 비밀번호 변경 전까진 로그인 유지됨)</span>
       </div>
 
+      <!-- 키패드 버튼 -->
       <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%;">
-        <button type="button" onclick="pressPortalPin('1')" style="height: 50px; font-size: 20px; font-weight: bold; background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 12px; cursor: pointer;">1</button>
-        <button type="button" onclick="pressPortalPin('2')" style="height: 50px; font-size: 20px; font-weight: bold; background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 12px; cursor: pointer;">2</button>
-        <button type="button" onclick="pressPortalPin('3')" style="height: 50px; font-size: 20px; font-weight: bold; background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 12px; cursor: pointer;">3</button>
-        <button type="button" onclick="pressPortalPin('4')" style="height: 50px; font-size: 20px; font-weight: bold; background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 12px; cursor: pointer;">4</button>
-        <button type="button" onclick="pressPortalPin('5')" style="height: 50px; font-size: 20px; font-weight: bold; background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 12px; cursor: pointer;">5</button>
-        <button type="button" onclick="pressPortalPin('6')" style="height: 50px; font-size: 20px; font-weight: bold; background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 12px; cursor: pointer;">6</button>
-        <button type="button" onclick="pressPortalPin('7')" style="height: 50px; font-size: 20px; font-weight: bold; background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 12px; cursor: pointer;">7</button>
-        <button type="button" onclick="pressPortalPin('8')" style="height: 50px; font-size: 20px; font-weight: bold; background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 12px; cursor: pointer;">8</button>
-        <button type="button" onclick="pressPortalPin('9')" style="height: 50px; font-size: 20px; font-weight: bold; background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 12px; cursor: pointer;">9</button>
-        <button type="button" onclick="clearPortalPin()" style="height: 50px; font-size: 13px; font-weight: bold; background: #334155; color: #cbd5e1; border: none; border-radius: 12px; cursor: pointer;">초기화</button>
-        <button type="button" onclick="pressPortalPin('0')" style="height: 50px; font-size: 20px; font-weight: bold; background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 12px; cursor: pointer;">0</button>
-        <button type="button" onclick="backspacePortalPin()" style="height: 50px; font-size: 16px; font-weight: bold; background: #334155; color: #cbd5e1; border: none; border-radius: 12px; cursor: pointer;">⌫</button>
+        <button type="button" onclick="pressPortalPin('1')" style="height: 48px; font-size: 20px; font-weight: bold; background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 12px; cursor: pointer;">1</button>
+        <button type="button" onclick="pressPortalPin('2')" style="height: 48px; font-size: 20px; font-weight: bold; background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 12px; cursor: pointer;">2</button>
+        <button type="button" onclick="pressPortalPin('3')" style="height: 48px; font-size: 20px; font-weight: bold; background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 12px; cursor: pointer;">3</button>
+        <button type="button" onclick="pressPortalPin('4')" style="height: 48px; font-size: 20px; font-weight: bold; background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 12px; cursor: pointer;">4</button>
+        <button type="button" onclick="pressPortalPin('5')" style="height: 48px; font-size: 20px; font-weight: bold; background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 12px; cursor: pointer;">5</button>
+        <button type="button" onclick="pressPortalPin('6')" style="height: 48px; font-size: 20px; font-weight: bold; background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 12px; cursor: pointer;">6</button>
+        <button type="button" onclick="pressPortalPin('7')" style="height: 48px; font-size: 20px; font-weight: bold; background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 12px; cursor: pointer;">7</button>
+        <button type="button" onclick="pressPortalPin('8')" style="height: 48px; font-size: 20px; font-weight: bold; background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 12px; cursor: pointer;">8</button>
+        <button type="button" onclick="pressPortalPin('9')" style="height: 48px; font-size: 20px; font-weight: bold; background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 12px; cursor: pointer;">9</button>
+        <button type="button" onclick="clearPortalPin()" style="height: 48px; font-size: 13px; font-weight: bold; background: #334155; color: #cbd5e1; border: none; border-radius: 12px; cursor: pointer;">초기화</button>
+        <button type="button" onclick="pressPortalPin('0')" style="height: 48px; font-size: 20px; font-weight: bold; background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 12px; cursor: pointer;">0</button>
+        <button type="button" onclick="backspacePortalPin()" style="height: 48px; font-size: 16px; font-weight: bold; background: #334155; color: #cbd5e1; border: none; border-radius: 12px; cursor: pointer;">⌫</button>
       </div>
+
+      <!-- 하단 안내 토글 영역 (홈 화면 등록법 + 3팀 감사 원문) -->
+      <div style="margin-top: 14px; width: 100%; border-top: 1px solid #1e293b; padding-top: 10px; text-align: center;">
+        <button type="button" onclick="togglePortalHelpBox()" style="background: none; border: none; color: #38bdf8; font-size: 11.5px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+          <span>💡</span> 홈 화면 바로가기 등록 안내
+        </button>
+        
+        <div id="portalHelpBox" style="display: none; margin-top: 10px; background: #131d31; border: 1px solid #1e293b; border-radius: 12px; padding: 12px 10px; font-size: 11px; color: #cbd5e1; text-align: left; line-height: 1.5; word-break: keep-all;">
+          <!-- 통합 주의 상자 -->
+          <div style="background-color: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; padding: 8px 10px; margin-bottom: 10px; color: #f87171; font-size: 10.5px;">
+            <b style="color: #fca5a5;">⚠️ 기존 바로가기는 삭제 후 재등록해 주세요!</b><br>
+            카카오톡 링크로 바로 여실 경우 <b>팀, 이름 초기화 등 예기치 않은 오류가 발생</b>할 수 있으니, 주소를 복사하여 아래 전용 브라우저 절차대로 홈 화면에 추가해 주시기 바랍니다.
+          </div>
+
+          <!-- 기기별 절차 -->
+          <div style="margin-bottom: 8px;">
+            <b style="color: #f8fafc;">📱 갤럭시 (네이버 앱)</b><br>
+            새 주소로 열기 ➔ 우측 하단 <b>[=]</b> ➔ <b>[홈 화면 추가]</b>
+          </div>
+          <div style="margin-bottom: 10px;">
+            <b style="color: #f8fafc;">🍎 아이폰 (Safari)</b><br>
+            새 주소로 열기 ➔ 하단 중앙 <b>[공유]</b> ➔ <b>[홈 화면에 추가]</b>
+          </div>
+
+          <!-- 3팀 감사 인사 원문 -->
+          <div style="border-top: 1px dashed #334155; padding-top: 8px; font-size: 10px; color: #64748b; line-height: 1.5;">
+            아직 완성본이 아니며 지속적으로 보완 중입니다. 오류나 건의사항이 있으시면 편하게 연락 주시면 정말 감사하겠습니다.<br>
+            함께 의견 내어 주시고, 자료 만들어 주시고, 테스트하며 고생하고 계신 <b style="color: #94a3b8;">3팀 여러분들께 진심으로 감사드립니다.</b> 😊
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -98,6 +131,13 @@
     const appFrame = document.getElementById('appFrame');
     const pinScreen = document.getElementById('portalPinScreen');
     const logoutBtn = document.getElementById('portalLogoutBtn');
+
+    // 토글 박스 열고 닫기
+    function togglePortalHelpBox() {
+      const box = document.getElementById('portalHelpBox');
+      if (!box) return;
+      box.style.display = (box.style.display === 'none' || !box.style.display) ? 'block' : 'none';
+    }
 
     // 1. iframe 로딩 함수 (인증된 PIN을 구글 서버로 직접 전송)
     function loadMainApp() {
@@ -189,7 +229,6 @@
       updatePortalPinDots();
       const msg = document.getElementById('pStatusMsg');
       if (msg) {
-        // 직접 수정하신 13px 크기 및 문구 완벽 일치 반영
         msg.innerHTML = "4자리 보안 PIN을 입력하세요 (힌트: 대저)<br><span style='font-size: 13px; color: #64748b; font-weight: 500;'>(로그아웃 또는 비밀번호 변경 전까진 로그인 유지됨)</span>";
         msg.style.color = "#94a3b8";
       }
