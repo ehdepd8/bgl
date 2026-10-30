@@ -14,13 +14,12 @@
     html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #ffffff; }
     iframe { width: 100%; height: 100%; border: none; display: block; }
 
-  /* 내부 헤더 텍스트와 높이 및 여백 완벽 일치 */
     #portalLogoutBtn {
       position: fixed;
-      top: 21px;            /* 18px -> 21px로 살짝 내려 글자 중심선과 일치 */
-      right: 24px;          /* 흰색 카드 우측 끝선 여백과 정렬 */
+      top: 21px;
+      right: 24px;
       z-index: 99999;
-      display: none;        /* 초기 깜빡임 방지: 기본 숨김 */
+      display: none;
       align-items: center;
       gap: 3px;
       font-size: 11px;
@@ -42,23 +41,18 @@
   </style>
 </head>
 <body>
-  <!-- 초기 로딩 시 깜빡임 방지 (style="display: none;") -->
   <button type="button" id="portalLogoutBtn" onclick="handlePortalLogout()" style="display: none;">
     <span>🔒</span> 로그아웃
   </button>
 
-  <!-- 메인 iframe -->
   <iframe id="appFrame" allow="clipboard-read; clipboard-write; clipboard-write *; web-share"></iframe>
 
-  <!-- 관제 스타일 PIN 인증 화면 -->
   <div id="portalPinScreen" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: #0b1120; z-index: 9999999; flex-direction: column; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; backdrop-filter: blur(10px);">
     <div style="background-color: #0f172a; border: 1px solid #1e293b; border-radius: 20px; width: 100%; max-width: 320px; padding: 28px 20px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8); display: flex; flex-direction: column; align-items: center; color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
       
-      <!-- 관제 헤더 -->
       <div style="font-size: 11px; font-weight: 800; color: #38bdf8; letter-spacing: 2px; margin-bottom: 4px;">BGL OCC CONTROL</div>
       <div style="font-size: 16px; font-weight: 700; margin-bottom: 20px; color: #ffffff;">통합 포털 보안 인증</div>
 
-      <!-- 4자리 PIN 인디케이터 (● ○ ○ ○) -->
       <div style="display: flex; gap: 14px; margin-bottom: 24px;">
         <span class="pin-dot" id="pDot0" style="width: 14px; height: 14px; border-radius: 50%; border: 2px solid #475569; background: transparent; transition: all 0.2s;"></span>
         <span class="pin-dot" id="pDot1" style="width: 14px; height: 14px; border-radius: 50%; border: 2px solid #475569; background: transparent; transition: all 0.2s;"></span>
@@ -66,10 +60,8 @@
         <span class="pin-dot" id="pDot3" style="width: 14px; height: 14px; border-radius: 50%; border: 2px solid #475569; background: transparent; transition: all 0.2s;"></span>
       </div>
 
-      <!-- 상태 메시지 -->
-      <div id="pStatusMsg" style="font-size: 11px; color: #94a3b8; height: 16px; margin-bottom: 14px; font-weight: 600;">4자리 보안 PIN을 입력하세요</div>
+      <div id="pStatusMsg" style="font-size: 11px; color: #94a3b8; height: 16px; margin-bottom: 14px; font-weight: 600;">4자리 보안 PIN을 입력하세요(힌트:대저)</div>
 
-      <!-- 3x4 키패드 -->
       <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%;">
         <button type="button" onclick="pressPortalPin('1')" style="height: 50px; font-size: 20px; font-weight: bold; background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 12px; cursor: pointer;">1</button>
         <button type="button" onclick="pressPortalPin('2')" style="height: 50px; font-size: 20px; font-weight: bold; background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 12px; cursor: pointer;">2</button>
@@ -88,11 +80,6 @@
   </div>
 
   <script>
-    /* =========================================================================
-       접속 보안 검증 및 자동 로그인 제어
-       ========================================================================= */
-    // ★ 비밀번호를 변경할 때 이 버전 숫자(v1 -> v2 -> v3)만 하나 올려주면
-    // 기존에 로그인되어 있던 모든 직원 기기들이 자동으로 로그아웃됩니다!
     const AUTH_KEY = 'bgl_auth_v2';
     let currentPortalPin = "";
 
@@ -101,7 +88,6 @@
     const pinScreen = document.getElementById('portalPinScreen');
     const logoutBtn = document.getElementById('portalLogoutBtn');
 
-    // 1. iframe 지연 로딩 함수 (기존 파라미터 및 로컬 저장소 로직 유지)
     function loadMainApp() {
       if (appFrame.src && appFrame.src !== "about:blank") return;
 
@@ -122,14 +108,12 @@
       if (!params.has("initStation") && savedStation) params.set("initStation", savedStation);
       if (!params.has("initTtRecords") && savedTtRecords) params.set("initTtRecords", savedTtRecords);
 
-      // ★ 구글 서버 인증용 통과 키 추가
       params.set("portalKey", "bgl_verified");
 
       let finalQuery = params.toString() ? ("?" + params.toString()) : "";
       appFrame.src = BASE_APP_URL + finalQuery + currentHash;
     }
 
-   // 2. 인증 상태 체크
     function checkPortalAuth() {
       let isAuth = false;
       try {
@@ -138,13 +122,10 @@
 
       if (isAuth) {
         if (pinScreen) pinScreen.style.display = 'none';
-        
-        // ★ 바로 켜지 않고, iframe 로딩이 완료되었을 때만 버튼을 노출
         if (logoutBtn) logoutBtn.style.display = 'none';
         appFrame.onload = function() {
           if (logoutBtn) logoutBtn.style.display = 'inline-flex';
         };
-
         loadMainApp();
       } else {
         if (pinScreen) pinScreen.style.display = 'flex';
@@ -153,7 +134,6 @@
       }
     }
 
-    // 3. 인디케이터 UI 갱신
     function updatePortalPinDots() {
       for (let i = 0; i < 4; i++) {
         const dot = document.getElementById('pDot' + i);
@@ -197,7 +177,7 @@
       }
     }
 
-    // 4. 난독화 PIN 검증 로직
+    // 4. 난독화 PIN 검증 로직 (9607 난독화)
     const SECRET_PIN_KEY = "OTYwNw==";
 
     function verifyPortalPin() {
@@ -206,7 +186,6 @@
 
       if (val.length !== 4) return;
 
-      // 브라우저 내장 btoa로 즉시 변환하여 0초 판별 (비동기 오류 원천 차단)
       const isValid = (btoa(val) === SECRET_PIN_KEY);
 
       if (isValid) {
@@ -232,8 +211,6 @@
       }
     }
 
-
-    // 5. 수동 로그아웃
     function handlePortalLogout() {
       if (!confirm("로그아웃하시겠습니까? (자동 로그인이 해제됩니다)")) return;
       try {
@@ -242,7 +219,6 @@
       checkPortalAuth();
     }
 
-    // 6. 기존 메시지 리스너 (시각표/근무표 양방향 통신 유지)
     window.addEventListener("message", function(e) {
       if (!e || !e.data) return;
 
@@ -304,7 +280,6 @@
       }
     }, false);
 
-    // 실행 시작
     checkPortalAuth();
   </script>
 </body>
