@@ -181,11 +181,11 @@
 
       if (isAuth) {
         if (pinScreen) pinScreen.style.display = 'none';
-        if (logoutBtn) logoutBtn.style.display = 'none';
+        // ★ 기존의 logoutBtn.style.display = 'none'; 삭제
         loadMainApp();
       } else {
         if (pinScreen) pinScreen.style.display = 'flex';
-        if (logoutBtn) logoutBtn.style.display = 'none';
+        if (logoutBtn) logoutBtn.style.display = 'none'; // 미인증 상태일 때만 숨김
         clearPortalPin();
       }
     }
