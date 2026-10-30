@@ -243,7 +243,7 @@
 
       if (msg) {
         msg.innerText = "서버 보안 인증 확인 중...";
-        msg.style.color = "#38bdf8";
+        msg.style.color = "#f59e0b";
       }
 
       const script = document.createElement('script');
@@ -256,7 +256,7 @@
         if (res && res.success) {
           if (msg) {
             msg.innerText = "인증 성공! 접속합니다.";
-            msg.style.color = "#38bdf8";
+            msg.style.color = "#22c55e";
           }
           try {
             localStorage.setItem(SAVED_PIN_KEY, val);
