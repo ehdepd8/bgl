@@ -8,7 +8,7 @@
   <link rel="icon" type="image/png" sizes="192x192" href="https://i.ibb.co/zWmkwfRw/image.png">
   <link rel="shortcut icon" href="https://i.ibb.co/zWmkwfRw/image.png">
   <meta property="og:title" content="역근무현황">
-  <meta property="og:description" content="부산-김해경전철 역무 지원 포털">
+  <meta property="og:description" content="부산-김해경전철 역무운영 포털">
   <meta property="og:image" content="https://i.ibb.co/zWmkwfRw/image.png">
   <style>
     html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #ffffff; }
@@ -41,7 +41,7 @@
   </style>
 </head>
 <body>
-  <!-- 화면 렌더링 완료 시에만 나타나는 로그아웃 버튼 -->
+  <!-- 로그인 완료 후 우측 상단 로그아웃 버튼 -->
   <button type="button" id="portalLogoutBtn" onclick="handlePortalLogout()" style="display: none;">
     <span>🔒</span> 로그아웃
   </button>
@@ -63,7 +63,7 @@
         <span class="pin-dot" id="pDot3" style="width: 14px; height: 14px; border-radius: 50%; border: 2px solid #475569; background: transparent; transition: all 0.2s;"></span>
       </div>
 
-      <!-- 상태 메시지 (자동 로그인 유지 안내 추가) -->
+      <!-- 상태 메시지 (수정하신 폰트 크기 및 안내 문구 반영) -->
       <div id="pStatusMsg" style="font-size: 14px; color: #94a3b8; line-height: 1.4; margin-bottom: 14px; font-weight: 600; text-align: center; word-break: keep-all;">
         4자리 보안 PIN을 입력하세요 (힌트: 대저)<br>
         <span style="font-size: 13px; color: #64748b; font-weight: 500;">(로그아웃 또는 비밀번호 변경 전까진 로그인 유지됨)</span>
@@ -99,7 +99,7 @@
     const pinScreen = document.getElementById('portalPinScreen');
     const logoutBtn = document.getElementById('portalLogoutBtn');
 
-    // 1. iframe 로딩 함수 (서버 인증 PIN 및 키 동시 전달)
+    // 1. iframe 로딩 함수 (인증된 PIN을 구글 서버로 직접 전송)
     function loadMainApp() {
       if (appFrame.src && appFrame.src !== "about:blank") return;
 
@@ -121,11 +121,9 @@
       if (!params.has("initStation") && savedStation) params.set("initStation", savedStation);
       if (!params.has("initTtRecords") && savedTtRecords) params.set("initTtRecords", savedTtRecords);
 
-      // 구글 서버 통과 파라미터 (포털키 + 서버검증된 PIN)
       params.set("portalKey", "bgl_verified");
       params.set("accessPin", verifiedPin);
 
-      // 화면이 완전히 로딩된 후 로그아웃 버튼 표시
       appFrame.onload = function() {
         if (logoutBtn) logoutBtn.style.display = 'inline-flex';
       };
@@ -134,7 +132,7 @@
       appFrame.src = BASE_APP_URL + finalQuery + currentHash;
     }
 
-    // 2. 인증 상태 체크
+    // 2. 인증 상태 확인
     function checkPortalAuth() {
       let isAuth = false;
       try {
@@ -152,7 +150,7 @@
       }
     }
 
-    // 3. 인디케이터 UI 갱신
+    // 3. 점 인디케이터 표시
     function updatePortalPinDots() {
       for (let i = 0; i < 4; i++) {
         const dot = document.getElementById('pDot' + i);
@@ -191,12 +189,13 @@
       updatePortalPinDots();
       const msg = document.getElementById('pStatusMsg');
       if (msg) {
-        msg.innerHTML = "4자리 보안 PIN을 입력하세요 (힌트: 대저)<br><span style='font-size: 10px; color: #64748b; font-weight: 500;'>(로그아웃 또는 비밀번호 변경 전까지 로그인 유지됨)</span>";
+        // 직접 수정하신 13px 크기 및 문구 완벽 일치 반영
+        msg.innerHTML = "4자리 보안 PIN을 입력하세요 (힌트: 대저)<br><span style='font-size: 13px; color: #64748b; font-weight: 500;'>(로그아웃 또는 비밀번호 변경 전까진 로그인 유지됨)</span>";
         msg.style.color = "#94a3b8";
       }
     }
 
-    // 4. 구글 서버 직접 검증 로직 (깃허브 소스코드에 정답 PIN이 일절 남지 않음)
+    // 4. 구글 서버 직접 검증 요청 (JSONP)
     function verifyPortalPinOnServer() {
       const msg = document.getElementById('pStatusMsg');
       const val = currentPortalPin.toString().trim();
@@ -208,7 +207,6 @@
         msg.style.color = "#38bdf8";
       }
 
-      // JSONP 방식으로 구글 서버에 직접 질의
       const script = document.createElement('script');
       const callbackName = 'pin_res_' + Date.now();
 
@@ -239,7 +237,6 @@
         }
       };
 
-      // 네트워크 오류 또는 서버 미응답 시 예외 처리
       script.onerror = function() {
         if (script.parentNode) script.parentNode.removeChild(script);
         delete window[callbackName];
@@ -254,7 +251,7 @@
       document.body.appendChild(script);
     }
 
-    // 5. 수동 로그아웃
+    // 5. 로그아웃
     function handlePortalLogout() {
       if (!confirm("로그아웃하시겠습니까? (자동 로그인이 해제됩니다)")) return;
       try {
@@ -264,7 +261,7 @@
       checkPortalAuth();
     }
 
-    // 6. 기존 메시지 리스너 (시각표/근무표 양방향 통신 유지)
+    // 6. 부모-자식 프레임 메시지 리스너 (기존 기능 100% 유지)
     window.addEventListener("message", function(e) {
       if (!e || !e.data) return;
 
@@ -326,7 +323,6 @@
       }
     }, false);
 
-    // 실행 시작
     checkPortalAuth();
   </script>
 </body>
