@@ -126,7 +126,7 @@
       appFrame.src = BASE_APP_URL + finalQuery + currentHash;
     }
 
-    // 2. 인증 상태 체크
+   // 2. 인증 상태 체크
     function checkPortalAuth() {
       let isAuth = false;
       try {
@@ -135,7 +135,13 @@
 
       if (isAuth) {
         if (pinScreen) pinScreen.style.display = 'none';
-        if (logoutBtn) logoutBtn.style.display = 'inline-flex';
+        
+        // ★ 바로 켜지 않고, iframe 로딩이 완료되었을 때만 버튼을 노출
+        if (logoutBtn) logoutBtn.style.display = 'none';
+        appFrame.onload = function() {
+          if (logoutBtn) logoutBtn.style.display = 'inline-flex';
+        };
+
         loadMainApp();
       } else {
         if (pinScreen) pinScreen.style.display = 'flex';
