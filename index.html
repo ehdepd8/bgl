@@ -13,51 +13,238 @@
   <style>
     html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #ffffff; }
     iframe { width: 100%; height: 100%; border: none; display: block; }
+
+    /* 우측 상단 플로팅 로그아웃 버튼 */
+    #portalLogoutBtn {
+      position: fixed;
+      top: 10px;
+      right: 12px;
+      z-index: 99999;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #94a3b8;
+      background-color: rgba(15, 23, 42, 0.85);
+      border: 1px solid #334155;
+      padding: 4px 9px;
+      border-radius: 9999px;
+      cursor: pointer;
+      backdrop-filter: blur(4px);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      transition: all 0.2s;
+    }
+    #portalLogoutBtn:hover {
+      color: #f43f5e;
+      border-color: #e11d48;
+    }
   </style>
 </head>
 <body>
+  <!-- 우측 상단 플로팅 로그아웃 버튼 -->
+  <button type="button" id="portalLogoutBtn" onclick="handlePortalLogout()">
+    <span>🔒</span> 로그아웃
+  </button>
+
+  <!-- 메인 iframe -->
   <iframe id="appFrame" allow="clipboard-read; clipboard-write; clipboard-write *; web-share"></iframe>
 
+  <!-- 관제 스타일 PIN 인증 화면 -->
+  <div id="portalPinScreen" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: #0b1120; z-index: 9999999; flex-direction: column; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; backdrop-filter: blur(10px);">
+    <div style="background-color: #0f172a; border: 1px solid #1e293b; border-radius: 20px; width: 100%; max-width: 320px; padding: 28px 20px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8); display: flex; flex-direction: column; align-items: center; color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+      
+      <!-- 관제 헤더 -->
+      <div style="font-size: 11px; font-weight: 800; color: #38bdf8; letter-spacing: 2px; margin-bottom: 4px;">BGL OCC CONTROL</div>
+      <div style="font-size: 16px; font-weight: 700; margin-bottom: 20px; color: #ffffff;">통합 포털 보안 인증</div>
+
+      <!-- 4자리 PIN 인디케이터 (● ○ ○ ○) -->
+      <div style="display: flex; gap: 14px; margin-bottom: 24px;">
+        <span class="pin-dot" id="pDot0" style="width: 14px; height: 14px; border-radius: 50%; border: 2px solid #475569; background: transparent; transition: all 0.2s;"></span>
+        <span class="pin-dot" id="pDot1" style="width: 14px; height: 14px; border-radius: 50%; border: 2px solid #475569; background: transparent; transition: all 0.2s;"></span>
+        <span class="pin-dot" id="pDot2" style="width: 14px; height: 14px; border-radius: 50%; border: 2px solid #475569; background: transparent; transition: all 0.2s;"></span>
+        <span class="pin-dot" id="pDot3" style="width: 14px; height: 14px; border-radius: 50%; border: 2px solid #475569; background: transparent; transition: all 0.2s;"></span>
+      </div>
+
+      <!-- 상태 메시지 -->
+      <div id="pStatusMsg" style="font-size: 11px; color: #94a3b8; height: 16px; margin-bottom: 14px; font-weight: 600;">4자리 보안 PIN을 입력하세요</div>
+
+      <!-- 3x4 키패드 -->
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%;">
+        <button type="button" onclick="pressPortalPin('1')" style="height: 50px; font-size: 20px; font-weight: bold; background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 12px; cursor: pointer;">1</button>
+        <button type="button" onclick="pressPortalPin('2')" style="height: 50px; font-size: 20px; font-weight: bold; background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 12px; cursor: pointer;">2</button>
+        <button type="button" onclick="pressPortalPin('3')" style="height: 50px; font-size: 20px; font-weight: bold; background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 12px; cursor: pointer;">3</button>
+        <button type="button" onclick="pressPortalPin('4')" style="height: 50px; font-size: 20px; font-weight: bold; background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 12px; cursor: pointer;">4</button>
+        <button type="button" onclick="pressPortalPin('5')" style="height: 50px; font-size: 20px; font-weight: bold; background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 12px; cursor: pointer;">5</button>
+        <button type="button" onclick="pressPortalPin('6')" style="height: 50px; font-size: 20px; font-weight: bold; background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 12px; cursor: pointer;">6</button>
+        <button type="button" onclick="pressPortalPin('7')" style="height: 50px; font-size: 20px; font-weight: bold; background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 12px; cursor: pointer;">7</button>
+        <button type="button" onclick="pressPortalPin('8')" style="height: 50px; font-size: 20px; font-weight: bold; background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 12px; cursor: pointer;">8</button>
+        <button type="button" onclick="pressPortalPin('9')" style="height: 50px; font-size: 20px; font-weight: bold; background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 12px; cursor: pointer;">9</button>
+        <button type="button" onclick="clearPortalPin()" style="height: 50px; font-size: 13px; font-weight: bold; background: #334155; color: #cbd5e1; border: none; border-radius: 12px; cursor: pointer;">초기화</button>
+        <button type="button" onclick="pressPortalPin('0')" style="height: 50px; font-size: 20px; font-weight: bold; background: #1e293b; color: #f8fafc; border: 1px solid #334155; border-radius: 12px; cursor: pointer;">0</button>
+        <button type="button" onclick="backspacePortalPin()" style="height: 50px; font-size: 16px; font-weight: bold; background: #334155; color: #cbd5e1; border: none; border-radius: 12px; cursor: pointer;">⌫</button>
+      </div>
+    </div>
+  </div>
+
   <script>
+    /* =========================================================================
+       접속 보안 검증 및 자동 로그인 제어
+       ========================================================================= */
+    // ★ 비밀번호를 변경할 때 이 버전 숫자(v1 -> v2 -> v3)만 하나 올려주면
+    // 기존에 로그인되어 있던 모든 직원 기기들이 자동으로 로그아웃됩니다!
+    const AUTH_KEY = 'bgl_auth_v2';
+    let currentPortalPin = "";
+
     const BASE_APP_URL = "https://script.google.com/macros/s/AKfycbx0aNwrGPIT5fb4CJnl2J6I2dZvYHdWVJ7H9NHPX3w15A0fC_h68DcclLMwzYswn2nJ/exec";
     const appFrame = document.getElementById('appFrame');
+    const pinScreen = document.getElementById('portalPinScreen');
+    const logoutBtn = document.getElementById('portalLogoutBtn');
 
-    // 저장된 설정값 불러오기 (팀, 이름, 역명, 선택 시각)
-    let savedDutyTeam = '', savedDutyName = '', savedStation = '', savedTtRecords = '';
-    try {
-      savedDutyTeam = localStorage.getItem('recent_station_team') || localStorage.getItem('station_user_team') || '3';
-      savedDutyName = localStorage.getItem('recent_station_name') || localStorage.getItem('station_user_name') || '';
-      savedStation = localStorage.getItem('lastTimetableStation') || '대저역';
-      savedTtRecords = localStorage.getItem('timetable_picked_records_v1') || '';
-    } catch(e) {}
+    // 1. iframe 지연 로딩 함수 (기존 파라미터 및 로컬 저장소 로직 유지)
+    function loadMainApp() {
+      if (appFrame.src && appFrame.src !== "about:blank") return;
 
-    // iframe URL 조합: 기존 주소창 파라미터가 없으면 저장소 값 주입
-    let currentQuery = window.location.search || "";
-    let currentHash = window.location.hash || "";
-    let params = new URLSearchParams(currentQuery);
+      let savedDutyTeam = '', savedDutyName = '', savedStation = '', savedTtRecords = '';
+      try {
+        savedDutyTeam = localStorage.getItem('recent_station_team') || localStorage.getItem('station_user_team') || '3';
+        savedDutyName = localStorage.getItem('recent_station_name') || localStorage.getItem('station_user_name') || '';
+        savedStation = localStorage.getItem('lastTimetableStation') || '대저역';
+        savedTtRecords = localStorage.getItem('timetable_picked_records_v1') || '';
+      } catch(e) {}
 
-    if (!params.has("initTeam") && savedDutyTeam) params.set("initTeam", savedDutyTeam);
-    if (!params.has("initName") && savedDutyName) params.set("initName", savedDutyName);
-    if (!params.has("initStation") && savedStation) params.set("initStation", savedStation);
-    if (!params.has("initTtRecords") && savedTtRecords) params.set("initTtRecords", savedTtRecords);
+      let currentQuery = window.location.search || "";
+      let currentHash = window.location.hash || "";
+      let params = new URLSearchParams(currentQuery);
 
-    let finalQuery = params.toString() ? ("?" + params.toString()) : "";
-    appFrame.src = BASE_APP_URL + finalQuery + currentHash;
+      if (!params.has("initTeam") && savedDutyTeam) params.set("initTeam", savedDutyTeam);
+      if (!params.has("initName") && savedDutyName) params.set("initName", savedDutyName);
+      if (!params.has("initStation") && savedStation) params.set("initStation", savedStation);
+      if (!params.has("initTtRecords") && savedTtRecords) params.set("initTtRecords", savedTtRecords);
 
-    // 양방향 메시지 리스너 (시각표 + 근무표 + 호스트 확인 완벽 통합)
+      let finalQuery = params.toString() ? ("?" + params.toString()) : "";
+      appFrame.src = BASE_APP_URL + finalQuery + currentHash;
+    }
+
+    // 2. 인증 상태 체크
+    function checkPortalAuth() {
+      let isAuth = false;
+      try {
+        isAuth = (localStorage.getItem(AUTH_KEY) === 'true');
+      } catch(e) {}
+
+      if (isAuth) {
+        if (pinScreen) pinScreen.style.display = 'none';
+        if (logoutBtn) logoutBtn.style.display = 'inline-flex';
+        loadMainApp();
+      } else {
+        if (pinScreen) pinScreen.style.display = 'flex';
+        if (logoutBtn) logoutBtn.style.display = 'none';
+        clearPortalPin();
+      }
+    }
+
+    // 3. 인디케이터 UI 갱신
+    function updatePortalPinDots() {
+      for (let i = 0; i < 4; i++) {
+        const dot = document.getElementById('pDot' + i);
+        if (!dot) continue;
+        if (i < currentPortalPin.length) {
+          dot.style.background = '#38bdf8';
+          dot.style.borderColor = '#38bdf8';
+          dot.style.boxShadow = '0 0 10px rgba(56, 189, 248, 0.7)';
+        } else {
+          dot.style.background = 'transparent';
+          dot.style.borderColor = '#475569';
+          dot.style.boxShadow = 'none';
+        }
+      }
+    }
+
+    function pressPortalPin(num) {
+      if (currentPortalPin.length >= 4) return;
+      currentPortalPin += num;
+      updatePortalPinDots();
+
+      if (currentPortalPin.length === 4) {
+        setTimeout(verifyPortalPin, 100);
+      }
+    }
+
+    function backspacePortalPin() {
+      if (currentPortalPin.length > 0) {
+        currentPortalPin = currentPortalPin.slice(0, -1);
+        updatePortalPinDots();
+      }
+    }
+
+    function clearPortalPin() {
+      currentPortalPin = "";
+      updatePortalPinDots();
+      const msg = document.getElementById('pStatusMsg');
+      if (msg) {
+        msg.innerText = "4자리 보안 PIN을 입력하세요(힌트:대저)";
+        msg.style.color = "#94a3b8";
+      }
+    }
+
+    // 4. 난독화 PIN 검증 로직
+    function verifyPortalPin() {
+      const msg = document.getElementById('pStatusMsg');
+      const val = currentPortalPin.toString().trim();
+
+      // 보내주신 ASCII 코드 연산 검증 (9607)
+      const isValid = (
+        val.length === 4 &&
+        val.charCodeAt(0) === (50 + 7) &&  
+        val.charCodeAt(1) === (60 - 6) &&  
+        val.charCodeAt(2) === (40 + 8) &&  
+        val.charCodeAt(3) === (50 + 5)    
+      );
+
+      if (isValid) {
+        if (msg) {
+          msg.innerText = "인증 성공! 접속합니다.";
+          msg.style.color = "#38bdf8";
+        }
+        try {
+          localStorage.setItem(AUTH_KEY, 'true');
+        } catch(e) {}
+
+        setTimeout(function() {
+          if (pinScreen) pinScreen.style.display = 'none';
+          if (logoutBtn) logoutBtn.style.display = 'inline-flex';
+          loadMainApp();
+        }, 300);
+      } else {
+        if (msg) {
+          msg.innerText = "PIN 번호가 일치하지 않습니다.";
+          msg.style.color = "#ef4444";
+        }
+        setTimeout(clearPortalPin, 600);
+      }
+    }
+
+    // 5. 수동 로그아웃
+    function handlePortalLogout() {
+      if (!confirm("로그아웃하시겠습니까? (자동 로그인이 해제됩니다)")) return;
+      try {
+        localStorage.removeItem(AUTH_KEY);
+      } catch(e) {}
+      checkPortalAuth();
+    }
+
+    // 6. 기존 메시지 리스너 (시각표/근무표 양방향 통신 유지)
     window.addEventListener("message", function(e) {
       if (!e || !e.data) return;
 
-      /* ▼▼▼▼▼ [팝업 차단 응답 - 나중에 팝업 완전히 삭제할 때 이 블록 삭제] ▼▼▼▼▼ */
       if (e.data.type === "PING_PARENT_ENV") {
         const responseData = { type: "PONG_PARENT_ENV" };
         if (e.source) e.source.postMessage(responseData, "*");
         if (appFrame && appFrame.contentWindow) appFrame.contentWindow.postMessage(responseData, "*");
         return;
       }
-      /* ▲▲▲▲▲ [팝업 차단 응답 끝] ▲▲▲▲▲ */
 
-      // 1) 시각표 저장
       if (e.data.type === "SAVE_TIMETABLE_PREF") {
         try {
           if (e.data.station) localStorage.setItem('lastTimetableStation', e.data.station);
@@ -65,7 +252,6 @@
         } catch(err) {}
       }
 
-      // 2) 시각표 데이터 요청 응답 (TimetableView 켜질 때)
       if (e.data.type === "REQ_TIMETABLE_PREF") {
         try {
           const st = localStorage.getItem('lastTimetableStation') || "대저역";
@@ -81,7 +267,6 @@
         } catch(err) {}
       }
 
-      // 3) 근무표 저장 (팀/이름)
       if (e.data.type === "SAVE_USER_PREF" || e.data.type === "SET_RECENT_DUTY_USER") {
         try {
           const t = e.data.team || '3';
@@ -95,7 +280,6 @@
         } catch(err) {}
       }
 
-      // 4) 근무표 데이터 요청 응답 (DutyView 켜질 때 - 아이폰 사파리 복원용)
       if (e.data.type === "REQ_DUTY_USER_PREF") {
         try {
           const t = localStorage.getItem('recent_station_team') || localStorage.getItem('station_user_team') || '3';
@@ -111,6 +295,9 @@
         } catch(err) {}
       }
     }, false);
+
+    // 실행 시작
+    checkPortalAuth();
   </script>
 </body>
 </html>
